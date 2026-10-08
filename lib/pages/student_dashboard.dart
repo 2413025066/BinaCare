@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'ajukan_konseling_page.dart';
+import 'status_pengajuan_page.dart';
+import 'jadwal_konseling_page.dart';
+import 'riwayat_konseling_page.dart';
+import 'profil_siswa_page.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -11,6 +15,10 @@ class StudentDashboard extends StatefulWidget {
 class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedIndex = 0;
 
+  // ============================================================
+  // BUKA HALAMAN AJUKAN KONSELING
+  // ============================================================
+
   void _openAjukanKonseling() {
     Navigator.push(
       context,
@@ -19,6 +27,62 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
     );
   }
+
+  // ============================================================
+  // BUKA HALAMAN STATUS PENGAJUAN
+  // ============================================================
+
+  void _openStatusPengajuan() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const StatusPengajuanPage(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUKA HALAMAN JADWAL KONSELING
+  // ============================================================
+
+  void _openJadwalKonseling() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const JadwalKonselingPage(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUKA HALAMAN RIWAYAT KONSELING
+  // ============================================================
+
+  void _openRiwayatKonseling() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RiwayatKonselingPage(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUKA HALAMAN PROFIL SISWA
+  // ============================================================
+
+  void _openProfilSiswa() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfilSiswaPage(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // PESAN SEMENTARA
+  // ============================================================
 
   void _showComingSoon(String title) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -29,26 +93,37 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  // ============================================================
+  // BOTTOM NAVIGATION
+  // ============================================================
+
   void _onBottomNavTap(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
     if (index == 1) {
-      _showComingSoon('Jadwal Konseling');
+      _openJadwalKonseling();
     } else if (index == 2) {
-      _showComingSoon('Riwayat Konseling');
+      _openRiwayatKonseling();
     } else if (index == 3) {
-      _showComingSoon('Profil');
+      _openProfilSiswa();
     }
   }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FA),
 
-      // ================= APP BAR =================
+      // ========================================================
+      // APP BAR
+      // ========================================================
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -64,7 +139,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ),
         actions: [
           IconButton(
-            onPressed: () => _showComingSoon('Notifikasi'),
+            onPressed: () {
+              _showComingSoon('Notifikasi');
+            },
             icon: const Icon(
               Icons.notifications_none_rounded,
               color: Color(0xFF202124),
@@ -75,15 +152,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ],
       ),
 
-      // ================= BODY =================
+      // ========================================================
+      // BODY
+      // ========================================================
+
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            8,
+            20,
+            24,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ==================================================
+              // SAPAAN
+              // ==================================================
 
-              // ================= GREETING =================
               const Text(
                 'Halo, Siswa 👋',
                 style: TextStyle(
@@ -105,7 +192,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
               const SizedBox(height: 22),
 
-              // ================= CTA =================
+              // ==================================================
+              // CARD AJUKAN KONSELING
+              // ==================================================
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -114,10 +204,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Butuh tempat untuk bercerita?',
@@ -133,7 +225,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           Text(
                             'Ajukan konseling dengan Guru BK.',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
+                              color: Colors.white.withValues(
+                                alpha: 0.85,
+                              ),
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -145,14 +239,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             onPressed: _openAjukanKonseling,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF2F6FA3),
+                              foregroundColor:
+                                  const Color(0xFF2F6FA3),
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(
+                              padding:
+                                  const EdgeInsets.symmetric(
                                 horizontal: 18,
                                 vertical: 11,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius:
+                                    BorderRadius.circular(10),
                               ),
                             ),
                             child: const Text(
@@ -172,7 +269,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       width: 54,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(
+                          alpha: 0.15,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -187,7 +286,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
               const SizedBox(height: 28),
 
-              // ================= STATUS =================
+              // ==================================================
+              // PENGAJUAN TERAKHIR
+              // ==================================================
+
               const Text(
                 'Pengajuan Terakhir',
                 style: TextStyle(
@@ -199,83 +301,107 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
               const SizedBox(height: 12),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(17),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: _openStatusPengajuan,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 45,
-                      height: 45,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAF3FA),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.description_outlined,
-                        color: Color(0xFF2F6FA3),
-                        size: 24,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(17),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFE5E7EB),
                       ),
                     ),
-
-                    const SizedBox(width: 13),
-
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Konseling Akademik',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF202124),
-                            ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEAF3FA),
+                            borderRadius:
+                                BorderRadius.circular(12),
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Guru BK 1',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF777777),
-                            ),
+                          child: const Icon(
+                            Icons.description_outlined,
+                            color: Color(0xFF2F6FA3),
+                            size: 24,
                           ),
-                        ],
-                      ),
-                    ),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF4D6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'Menunggu',
-                        style: TextStyle(
-                          color: Color(0xFF9A6A00),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
+
+                        const SizedBox(width: 13),
+
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Konseling Akademik',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF202124),
+                                ),
+                              ),
+
+                              SizedBox(height: 4),
+
+                              Text(
+                                'Ibu Siti Rahma, S.Pd.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF777777),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4D6),
+                            borderRadius:
+                                BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Menunggu',
+                            style: TextStyle(
+                              color: Color(0xFF9A6A00),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFF9CA3AF),
+                          size: 22,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 28),
 
-              // ================= AKSES CEPAT =================
+              // ==================================================
+              // AKSES CEPAT
+              // ==================================================
+
               const Text(
                 'Akses Cepat',
                 style: TextStyle(
@@ -286,6 +412,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ),
 
               const SizedBox(height: 14),
+
+              // ==================================================
+              // BARIS 1
+              // ==================================================
 
               Row(
                 children: [
@@ -303,8 +433,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     child: _menuCard(
                       icon: Icons.calendar_month_outlined,
                       title: 'Jadwal\nKonseling',
-                      onTap: () =>
-                          _showComingSoon('Jadwal Konseling'),
+                      onTap: _openJadwalKonseling,
                     ),
                   ),
                 ],
@@ -312,14 +441,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
               const SizedBox(height: 12),
 
+              // ==================================================
+              // BARIS 2
+              // ==================================================
+
               Row(
                 children: [
                   Expanded(
                     child: _menuCard(
                       icon: Icons.history_rounded,
                       title: 'Riwayat\nKonseling',
-                      onTap: () =>
-                          _showComingSoon('Riwayat Konseling'),
+                      onTap: _openRiwayatKonseling,
                     ),
                   ),
 
@@ -329,7 +461,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     child: _menuCard(
                       icon: Icons.person_outline_rounded,
                       title: 'Profil\nSaya',
-                      onTap: () => _showComingSoon('Profil'),
+                      onTap: _openProfilSiswa,
                     ),
                   ),
                 ],
@@ -339,7 +471,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ),
       ),
 
-      // ================= BOTTOM NAVIGATION =================
+      // ========================================================
+      // BOTTOM NAVIGATION
+      // ========================================================
+
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onBottomNavTap,
@@ -348,23 +483,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
         indicatorColor: const Color(0xFFEAF3FA),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
+            icon: Icon(
+              Icons.home_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.home_rounded,
+            ),
             label: 'Beranda',
           ),
+
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
+            icon: Icon(
+              Icons.calendar_month_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.calendar_month_rounded,
+            ),
             label: 'Jadwal',
           ),
+
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history_rounded),
+            icon: Icon(
+              Icons.history_outlined,
+            ),
+            selectedIcon: Icon(
+              Icons.history_rounded,
+            ),
             label: 'Riwayat',
           ),
+
           NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
+            icon: Icon(
+              Icons.person_outline_rounded,
+            ),
+            selectedIcon: Icon(
+              Icons.person_rounded,
+            ),
             label: 'Profil',
           ),
         ],
@@ -372,7 +526,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ================= MENU CARD =================
+  // ============================================================
+  // CARD AKSES CEPAT
+  // ============================================================
+
   Widget _menuCard({
     required IconData icon,
     required String title,
@@ -394,15 +551,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF3FA),
-                  borderRadius: BorderRadius.circular(11),
+                  borderRadius:
+                      BorderRadius.circular(11),
                 ),
                 child: Icon(
                   icon,

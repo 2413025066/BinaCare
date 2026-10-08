@@ -4,60 +4,66 @@ class AjukanKonselingPage extends StatefulWidget {
   const AjukanKonselingPage({super.key});
 
   @override
-  State<AjukanKonselingPage> createState() => _AjukanKonselingPageState();
+  State<AjukanKonselingPage> createState() =>
+      _AjukanKonselingPageState();
 }
 
-class _AjukanKonselingPageState extends State<AjukanKonselingPage> {
+class _AjukanKonselingPageState
+    extends State<AjukanKonselingPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _keperluanController =
+  final TextEditingController _ceritaController =
       TextEditingController();
 
-  final TextEditingController _masalahController =
-      TextEditingController();
+  String? _kategori;
+  String? _guruBk;
+  String? _jam;
+  String _urgensi = 'Sedang';
 
-  String? selectedGuru;
-  DateTime? selectedTanggal;
-  String? selectedWaktu;
+  DateTime? _tanggalKonseling;
 
-  final List<Map<String, String>> daftarGuru = [
-    {
-      'nama': 'Siti Rahma, S.Pd.',
-      'jabatan': 'Guru BK',
-    },
-    {
-      'nama': 'Budi Santoso, S.Pd.',
-      'jabatan': 'Guru BK',
-    },
-    {
-      'nama': 'Rina Marlina, S.Pd.',
-      'jabatan': 'Guru BK',
-    },
+  final List<String> _kategoriList = [
+    'Akademik',
+    'Pertemanan',
+    'Keluarga',
+    'Pribadi',
+    'Emosi',
+    'Lainnya',
   ];
 
-  final List<String> daftarWaktu = [
-    '08.00 - 09.00',
-    '09.00 - 10.00',
-    '10.00 - 11.00',
-    '13.00 - 14.00',
-    '14.00 - 15.00',
+  // Nama Guru BK sementara.
+  // Nanti bisa diganti dengan data dari database.
+  final List<String> _guruBkList = [
+    'Ibu Siti Rahma, S.Pd.',
+    'Bapak Andi Wijaya, S.Pd.',
+    'Ibu Rina Maharani, S.Psi.',
+  ];
+
+  final List<String> _jamList = [
+    '08:00 - 08:30',
+    '08:30 - 09:00',
+    '09:00 - 09:30',
+    '10:00 - 10:30',
+    '10:30 - 11:00',
+    '11:00 - 11:30',
+    '13:00 - 13:30',
+    '13:30 - 14:00',
+    '14:00 - 14:30',
+    '14:30 - 15:00',
   ];
 
   @override
   void dispose() {
-    _keperluanController.dispose();
-    _masalahController.dispose();
+    _ceritaController.dispose();
     super.dispose();
   }
-
-  // ================= PILIH TANGGAL =================
 
   Future<void> _pilihTanggal() async {
     final DateTime sekarang = DateTime.now();
 
     final DateTime? tanggal = await showDatePicker(
       context: context,
-      initialDate: selectedTanggal ?? sekarang,
+      initialDate: _tanggalKonseling ?? sekarang,
       firstDate: sekarang,
       lastDate: DateTime(
         sekarang.year + 1,
@@ -67,34 +73,29 @@ class _AjukanKonselingPageState extends State<AjukanKonselingPage> {
       helpText: 'Pilih tanggal konseling',
       cancelText: 'Batal',
       confirmText: 'Pilih',
-      fieldLabelText: 'Tanggal konseling',
-      fieldHintText: 'dd/mm/yyyy',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF2F6FA3),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF202124),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (tanggal != null) {
       setState(() {
-        selectedTanggal = tanggal;
+        _tanggalKonseling = tanggal;
       });
     }
   }
 
-  // ================= FORMAT TANGGAL =================
-
-  String _formatTanggal(DateTime? tanggal) {
-    if (tanggal == null) {
-      return 'Pilih tanggal konseling';
-    }
-
-    const List<String> namaHari = [
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-      'Minggu',
-    ];
-
+  String _formatTanggal(DateTime tanggal) {
     const List<String> namaBulan = [
       'Januari',
       'Februari',
@@ -110,192 +111,94 @@ class _AjukanKonselingPageState extends State<AjukanKonselingPage> {
       'Desember',
     ];
 
-    final String hari = namaHari[tanggal.weekday - 1];
-    final String bulan = namaBulan[tanggal.month - 1];
-
-    return '$hari, ${tanggal.day} $bulan ${tanggal.year}';
+    return '${tanggal.day} ${namaBulan[tanggal.month - 1]} '
+        '${tanggal.year}';
   }
 
-  // ================= SUBMIT =================
-
-  void _submitPengajuan() {
+  void _kirimPengajuan() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    if (selectedGuru == null) {
-      _showMessage('Silakan pilih Guru BK terlebih dahulu.');
+    if (_tanggalKonseling == null) {
+      _tampilkanPesan(
+        'Silakan pilih tanggal konseling terlebih dahulu.',
+      );
       return;
     }
 
-    if (selectedTanggal == null) {
-      _showMessage('Silakan pilih tanggal konseling.');
+    if (_jam == null) {
+      _tampilkanPesan(
+        'Silakan pilih jam konseling terlebih dahulu.',
+      );
       return;
     }
 
-    if (selectedWaktu == null) {
-      _showMessage('Silakan pilih waktu konseling.');
-      return;
-    }
-
-    final guru = daftarGuru.firstWhere(
-      (item) => item['nama'] == selectedGuru,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text(
-            'Konfirmasi Pengajuan',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Pastikan data konseling sudah benar.',
-                style: TextStyle(
-                  color: Color(0xFF666666),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              _detailKonfirmasi(
-                Icons.person_outline,
-                'Guru BK',
-                guru['nama']!,
-              ),
-
-              const SizedBox(height: 12),
-
-              _detailKonfirmasi(
-                Icons.calendar_today_outlined,
-                'Tanggal',
-                _formatTanggal(selectedTanggal),
-              ),
-
-              const SizedBox(height: 12),
-
-              _detailKonfirmasi(
-                Icons.access_time_rounded,
-                'Waktu',
-                selectedWaktu!,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Periksa Lagi'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-
-                showDialog(
-                  context: this.context,
-                  builder: (context) {
-                    return AlertDialog(
-                      icon: const Icon(
-                        Icons.check_circle_outline_rounded,
-                        color: Color(0xFF2F6FA3),
-                        size: 52,
-                      ),
-                      title: const Text(
-                        'Pengajuan Berhasil',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      content: const Text(
-                        'Pengajuan konseling berhasil dikirim dan sedang menunggu konfirmasi Guru BK.',
-                        textAlign: TextAlign.center,
-                      ),
-                      actions: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              Navigator.pop(this.context);
-                            },
-                            child: const Text('Kembali'),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2F6FA3),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Kirim Pengajuan'),
-            ),
-          ],
-        );
-      },
-    );
+    _tampilkanDialogBerhasil();
   }
 
-  // ================= SNACKBAR =================
-
-  void _showMessage(String message) {
+  void _tampilkanPesan(String pesan) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(pesan),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  // ================= DETAIL KONFIRMASI =================
-
-  Widget _detailKonfirmasi(
-    IconData icon,
-    String label,
-    String value,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          color: const Color(0xFF2F6FA3),
-          size: 21,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _tampilkanDialogBerhasil() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          title: const Row(
             children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF777777),
-                ),
+              Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF2E8B57),
+                size: 30,
               ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Pengajuan Berhasil',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          content: const Text(
+            'Pengajuan konseling kamu berhasil dibuat. '
+            'Silakan menunggu konfirmasi dari Guru BK.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Selesai',
+                style: TextStyle(
+                  color: Color(0xFF2F6FA3),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -304,339 +207,460 @@ class _AjukanKonselingPageState extends State<AjukanKonselingPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FA),
 
-      // ================= APP BAR =================
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF202124),
-          ),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
         title: const Text(
           'Ajukan Konseling',
           style: TextStyle(
-            color: Color(0xFF2F6FA3),
-            fontSize: 23,
+            color: Color(0xFF202124),
+            fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
         ),
+        iconTheme: const IconThemeData(
+          color: Color(0xFF202124),
+        ),
       ),
 
-      // ================= BODY =================
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              18,
+              20,
+              30,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+                // ================= HEADER =================
 
-              // ================= KEPERLUAN =================
-
-              const Text(
-                'Keperluan Konseling',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
-                ),
-              ),
-
-              const SizedBox(height: 9),
-
-              TextFormField(
-                controller: _keperluanController,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: 'Contoh: Masalah belajar',
-                  prefixIcon: const Icon(
-                    Icons.subject_rounded,
-                    color: Color(0xFF4B5563),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 17,
+                const Text(
+                  'Ceritakan yang kamu rasakan',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF202124),
                   ),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Keperluan konseling harus diisi.';
-                  }
-                  return null;
-                },
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 7),
 
-              // ================= MASALAH =================
-
-              const Text(
-                'Ceritakan Masalahmu',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
-                ),
-              ),
-
-              const SizedBox(height: 9),
-
-              TextFormField(
-                controller: _masalahController,
-                maxLines: 5,
-                textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(
-                  hintText:
-                      'Tuliskan masalah atau hal yang ingin kamu konsultasikan...',
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(
-                      left: 12,
-                      right: 8,
-                      top: 14,
-                    ),
-                    child: Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: Color(0xFF4B5563),
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ceritakan masalah yang ingin dikonsultasikan.';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              // ================= PILIH GURU =================
-
-              const Text(
-                'Pilih Guru BK',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
-                ),
-              ),
-
-              const SizedBox(height: 9),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedGuru,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(
-                    Icons.person_outline_rounded,
-                    color: Color(0xFF4B5563),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                const Text(
+                  'Isi informasi berikut untuk mengajukan '
+                  'sesi konseling dengan Guru BK.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Color(0xFF6B7280),
                   ),
                 ),
-                hint: const Text('Pilih Guru BK'),
-                items: daftarGuru.map((guru) {
-                  return DropdownMenuItem<String>(
-                    value: guru['nama'],
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          guru['nama']!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          guru['jabatan']!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedGuru = value;
-                  });
-                },
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ================= TANGGAL =================
+                // ================= KATEGORI =================
 
-              const Text(
-                'Pilih Tanggal Konseling',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
+                _label('Kategori Masalah'),
+
+                const SizedBox(height: 8),
+
+                DropdownButtonFormField<String>(
+                  value: _kategori,
+                  decoration: _inputDecoration(
+                    icon: Icons.category_outlined,
+                    hint: 'Pilih kategori masalah',
+                  ),
+                  items: _kategoriList.map((kategori) {
+                    return DropdownMenuItem<String>(
+                      value: kategori,
+                      child: Text(kategori),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _kategori = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Kategori masalah wajib dipilih';
+                    }
+                    return null;
+                  },
                 ),
-              ),
 
-              const SizedBox(height: 9),
+                const SizedBox(height: 20),
 
-              InkWell(
-                onTap: _pilihTanggal,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 17,
+                // ================= GURU BK =================
+
+                _label('Guru BK'),
+
+                const SizedBox(height: 8),
+
+                DropdownButtonFormField<String>(
+                  value: _guruBk,
+                  decoration: _inputDecoration(
+                    icon: Icons.person_outline_rounded,
+                    hint: 'Pilih Guru BK',
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month_outlined,
-                        color: Color(0xFF2F6FA3),
+                  items: _guruBkList.map((guru) {
+                    return DropdownMenuItem<String>(
+                      value: guru,
+                      child: Text(
+                        guru,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _guruBk = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Guru BK wajib dipilih';
+                    }
+                    return null;
+                  },
+                ),
 
-                      const SizedBox(width: 12),
+                const SizedBox(height: 20),
 
+                // ================= TANGGAL =================
+
+                _label('Tanggal Konseling'),
+
+                const SizedBox(height: 8),
+
+                InkWell(
+                  onTap: _pilihTanggal,
+                  borderRadius: BorderRadius.circular(13),
+                  child: InputDecorator(
+                    decoration: _inputDecoration(
+                      icon: Icons.calendar_month_outlined,
+                      hint: 'Pilih tanggal',
+                    ),
+                    child: Text(
+                      _tanggalKonseling == null
+                          ? 'Pilih tanggal konseling'
+                          : _formatTanggal(
+                              _tanggalKonseling!,
+                            ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _tanggalKonseling == null
+                            ? const Color(0xFF9CA3AF)
+                            : const Color(0xFF202124),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ================= JAM =================
+
+                _label('Jam Konseling'),
+
+                const SizedBox(height: 8),
+
+                DropdownButtonFormField<String>(
+                  value: _jam,
+                  decoration: _inputDecoration(
+                    icon: Icons.access_time_rounded,
+                    hint: 'Pilih jam konseling',
+                  ),
+                  items: _jamList.map((jam) {
+                    return DropdownMenuItem<String>(
+                      value: jam,
+                      child: Text(jam),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _jam = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Jam konseling wajib dipilih';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // ================= CERITA =================
+
+                _label('Ceritakan Masalahmu'),
+
+                const SizedBox(height: 8),
+
+                TextFormField(
+                  controller: _ceritaController,
+                  maxLines: 6,
+                  textInputAction: TextInputAction.newline,
+                  decoration: _inputDecoration(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    hint: 'Ceritakan masalah yang ingin kamu '
+                        'konsultasikan...',
+                  ).copyWith(
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (value) {
+                    if (value == null ||
+                        value.trim().isEmpty) {
+                      return 'Ceritakan masalah yang ingin dikonsultasikan';
+                    }
+
+                    if (value.trim().length < 10) {
+                      return 'Ceritakan sedikit lebih lengkap';
+                    }
+
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                // ================= URGENSI =================
+
+                _label('Tingkat Urgensi'),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _urgencyOption(
+                        'Rendah',
+                        Icons.keyboard_arrow_down_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _urgencyOption(
+                        'Sedang',
+                        Icons.remove_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _urgencyOption(
+                        'Tinggi',
+                        Icons.keyboard_arrow_up_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 25),
+
+                // ================= PRIVASI =================
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF3FA),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        color: Color(0xFF2F6FA3),
+                        size: 21,
+                      ),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _formatTanggal(selectedTanggal),
+                          'Cerita yang kamu sampaikan bersifat '
+                          'pribadi dan hanya digunakan untuk '
+                          'membantu proses konseling.',
                           style: TextStyle(
-                            fontSize: 15,
-                            color: selectedTanggal == null
-                                ? const Color(0xFF777777)
-                                : const Color(0xFF202124),
-                            fontWeight: selectedTanggal == null
-                                ? FontWeight.normal
-                                : FontWeight.w600,
+                            fontSize: 12,
+                            height: 1.5,
+                            color: Color(0xFF2F6FA3),
                           ),
                         ),
-                      ),
-
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Color(0xFF777777),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // ================= WAKTU =================
+                // ================= BUTTON =================
 
-              const Text(
-                'Pilih Waktu Konseling',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
-                ),
-              ),
-
-              const SizedBox(height: 9),
-
-              DropdownButtonFormField<String>(
-                initialValue: selectedWaktu,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(
-                    Icons.access_time_rounded,
-                    color: Color(0xFF4B5563),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                ),
-                hint: const Text('Pilih waktu tersedia'),
-                items: daftarWaktu.map((waktu) {
-                  return DropdownMenuItem<String>(
-                    value: waktu,
-                    child: Text(
-                      waktu,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                SizedBox(
+                  width: double.infinity,
+                  height: 53,
+                  child: ElevatedButton.icon(
+                    onPressed: _kirimPengajuan,
+                    icon: const Icon(
+                      Icons.send_rounded,
+                      size: 20,
+                    ),
+                    label: const Text(
+                      'Kirim Pengajuan',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedWaktu = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 30),
-
-              // ================= BUTTON =================
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _submitPengajuan,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2F6FA3),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Kirim Pengajuan',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2F6FA3),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // ================= LABEL =================
+
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF202124),
+      ),
+    );
+  }
+
+  // ================= INPUT DECORATION =================
+
+  InputDecoration _inputDecoration({
+    required IconData icon,
+    required String hint,
+  }) {
+    return InputDecoration(
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF2F6FA3),
+        size: 21,
+      ),
+      hintText: hint,
+      hintStyle: const TextStyle(
+        color: Color(0xFF9CA3AF),
+        fontSize: 14,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 15,
+        vertical: 15,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(
+          color: Color(0xFFE5E7EB),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(
+          color: Color(0xFFE5E7EB),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(
+          color: Color(0xFF2F6FA3),
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+          width: 1.5,
+        ),
+      ),
+    );
+  }
+
+  // ================= URGENCY OPTION =================
+
+  Widget _urgencyOption(
+    String value,
+    IconData icon,
+  ) {
+    final bool selected = _urgensi == value;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _urgensi = value;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 48,
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFEAF3FA)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF2F6FA3)
+                : const Color(0xFFE5E7EB),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: selected
+                  ? const Color(0xFF2F6FA3)
+                  : const Color(0xFF6B7280),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+                color: selected
+                    ? const Color(0xFF2F6FA3)
+                    : const Color(0xFF6B7280),
+              ),
+            ),
+          ],
         ),
       ),
     );
