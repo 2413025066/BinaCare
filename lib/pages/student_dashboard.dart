@@ -5,124 +5,25 @@ import 'jadwal_konseling_page.dart';
 import 'riwayat_konseling_page.dart';
 import 'profil_siswa_page.dart';
 
-class StudentDashboard extends StatefulWidget {
+class StudentDashboard extends StatelessWidget {
   const StudentDashboard({super.key});
 
-  @override
-  State<StudentDashboard> createState() => _StudentDashboardState();
-}
+  static const Color primaryColor = Color(0xFF2F6FA3);
+  static const Color backgroundColor = Color(0xFFF6F8FA);
+  static const Color textColor = Color(0xFF202124);
+  static const Color secondaryTextColor = Color(0xFF6B7280);
 
-class _StudentDashboardState extends State<StudentDashboard> {
-  int _selectedIndex = 0;
-
-  // ============================================================
-  // BUKA HALAMAN AJUKAN KONSELING
-  // ============================================================
-
-  void _openAjukanKonseling() {
+  void _openPage(BuildContext context, Widget page) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AjukanKonselingPage(),
-      ),
+      MaterialPageRoute(builder: (_) => page),
     );
   }
-
-  // ============================================================
-  // BUKA HALAMAN STATUS PENGAJUAN
-  // ============================================================
-
-  void _openStatusPengajuan() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const StatusPengajuanPage(),
-      ),
-    );
-  }
-
-  // ============================================================
-  // BUKA HALAMAN JADWAL KONSELING
-  // ============================================================
-
-  void _openJadwalKonseling() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const JadwalKonselingPage(),
-      ),
-    );
-  }
-
-  // ============================================================
-  // BUKA HALAMAN RIWAYAT KONSELING
-  // ============================================================
-
-  void _openRiwayatKonseling() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RiwayatKonselingPage(),
-      ),
-    );
-  }
-
-  // ============================================================
-  // BUKA HALAMAN PROFIL SISWA
-  // ============================================================
-
-  void _openProfilSiswa() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ProfilSiswaPage(),
-      ),
-    );
-  }
-
-  // ============================================================
-  // PESAN SEMENTARA
-  // ============================================================
-
-  void _showComingSoon(String title) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$title akan dibuat selanjutnya.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  // ============================================================
-  // BOTTOM NAVIGATION
-  // ============================================================
-
-  void _onBottomNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 1) {
-      _openJadwalKonseling();
-    } else if (index == 2) {
-      _openRiwayatKonseling();
-    } else if (index == 3) {
-      _openProfilSiswa();
-    }
-  }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FA),
-
-      // ========================================================
-      // APP BAR
-      // ========================================================
+      backgroundColor: backgroundColor,
 
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -132,308 +33,238 @@ class _StudentDashboardState extends State<StudentDashboard> {
         title: const Text(
           'BinaCare',
           style: TextStyle(
-            color: Color(0xFF2F6FA3),
-            fontSize: 25,
+            color: primaryColor,
+            fontSize: 24,
             fontWeight: FontWeight.w700,
           ),
         ),
         actions: [
           IconButton(
             onPressed: () {
-              _showComingSoon('Notifikasi');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Fitur notifikasi akan dibuat selanjutnya.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
             icon: const Icon(
               Icons.notifications_none_rounded,
-              color: Color(0xFF202124),
-              size: 28,
+              color: textColor,
+              size: 26,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
       ),
 
-      // ========================================================
-      // BODY
-      // ========================================================
-
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            8,
-            20,
-            24,
-          ),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ==================================================
-              // SAPAAN
-              // ==================================================
-
-              const Text(
-                'Halo, Siswa 👋',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              const Text(
-                'Ada yang ingin kamu ceritakan hari ini?',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF6B7280),
-                ),
+              // SAPAAN DAN PROFIL
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Halo, Siswa 👋',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        const Text(
+                          'Ada yang ingin kamu ceritakan hari ini?',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: secondaryTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => _openPage(
+                        context,
+                        const ProfilSiswaPage(),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFE5E7EB),
+                          ),
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.account_circle_outlined,
+                              color: primaryColor,
+                              size: 27,
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'Profil Saya',
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 22),
 
-              // ==================================================
-              // CARD AJUKAN KONSELING
-              // ==================================================
-
+              // BANNER KONSELING
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2F6FA3),
-                  borderRadius: BorderRadius.circular(18),
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Butuh tempat untuk bercerita?',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
+                              fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-
-                          const SizedBox(height: 7),
-
+                          const SizedBox(height: 5),
                           Text(
-                            'Ajukan konseling dengan Guru BK.',
+                            'Guru BK siap mendengarkan ceritamu.',
                             style: TextStyle(
-                              color: Colors.white.withValues(
-                                alpha: 0.85,
-                              ),
-                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 12,
                               height: 1.4,
                             ),
                           ),
-
-                          const SizedBox(height: 15),
-
-                          ElevatedButton(
-                            onPressed: _openAjukanKonseling,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor:
-                                  const Color(0xFF2F6FA3),
-                              elevation: 0,
-                              padding:
-                                  const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 11,
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 36,
+                            child: ElevatedButton(
+                              onPressed: () => _openPage(
+                                context,
+                                const AjukanKonselingPage(),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(10),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: primaryColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 13,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
                               ),
-                            ),
-                            child: const Text(
-                              'Ajukan Sekarang',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
+                              child: const Text(
+                                'Ajukan Konseling',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(width: 10),
-
+                    const SizedBox(width: 8),
                     Container(
-                      width: 54,
-                      height: 54,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(
-                          alpha: 0.15,
-                        ),
+                        color: Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.chat_bubble_outline_rounded,
                         color: Colors.white,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // ==================================================
-              // PENGAJUAN TERAKHIR
-              // ==================================================
-
+              // MENU LAYANAN
               const Text(
-                'Pengajuan Terakhir',
+                'Layanan Konseling',
                 style: TextStyle(
-                  fontSize: 19,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
+                  color: textColor,
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  onTap: _openStatusPengajuan,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(17),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFFE5E7EB),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 45,
-                          height: 45,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEAF3FA),
-                            borderRadius:
-                                BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.description_outlined,
-                            color: Color(0xFF2F6FA3),
-                            size: 24,
-                          ),
-                        ),
-
-                        const SizedBox(width: 13),
-
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Konseling Akademik',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF202124),
-                                ),
-                              ),
-
-                              SizedBox(height: 4),
-
-                              Text(
-                                'Ibu Siti Rahma, S.Pd.',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF777777),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Container(
-                          padding:
-                              const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF4D6),
-                            borderRadius:
-                                BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Menunggu',
-                            style: TextStyle(
-                              color: Color(0xFF9A6A00),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 6),
-
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: Color(0xFF9CA3AF),
-                          size: 22,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // ==================================================
-              // AKSES CEPAT
-              // ==================================================
-
+              const SizedBox(height: 5),
               const Text(
-                'Akses Cepat',
+                'Pilih menu yang kamu butuhkan.',
                 style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF202124),
+                  fontSize: 12,
+                  color: secondaryTextColor,
                 ),
               ),
 
-              const SizedBox(height: 14),
-
-              // ==================================================
-              // BARIS 1
-              // ==================================================
+              const SizedBox(height: 13),
 
               Row(
                 children: [
                   Expanded(
                     child: _menuCard(
                       icon: Icons.edit_note_rounded,
-                      title: 'Ajukan\nKonseling',
-                      onTap: _openAjukanKonseling,
+                      title: 'Ajukan Konseling',
+                      subtitle: 'Buat pengajuan baru',
+                      onTap: () => _openPage(
+                        context,
+                        const AjukanKonselingPage(),
+                      ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: _menuCard(
-                      icon: Icons.calendar_month_outlined,
-                      title: 'Jadwal\nKonseling',
-                      onTap: _openJadwalKonseling,
+                      icon: Icons.assignment_outlined,
+                      title: 'Status Pengajuan',
+                      subtitle: 'Cek status pengajuan',
+                      onTap: () => _openPage(
+                        context,
+                        const StatusPengajuanPage(),
+                      ),
                     ),
                   ),
                 ],
@@ -441,27 +272,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
               const SizedBox(height: 12),
 
-              // ==================================================
-              // BARIS 2
-              // ==================================================
-
               Row(
                 children: [
                   Expanded(
                     child: _menuCard(
-                      icon: Icons.history_rounded,
-                      title: 'Riwayat\nKonseling',
-                      onTap: _openRiwayatKonseling,
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Jadwal Konseling',
+                      subtitle: 'Lihat jadwalmu',
+                      onTap: () => _openPage(
+                        context,
+                        const JadwalKonselingPage(),
+                      ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: _menuCard(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Profil\nSaya',
-                      onTap: _openProfilSiswa,
+                      icon: Icons.history_rounded,
+                      title: 'Riwayat Konseling',
+                      subtitle: 'Lihat konseling sebelumnya',
+                      onTap: () => _openPage(
+                        context,
+                        const RiwayatKonselingPage(),
+                      ),
                     ),
                   ),
                 ],
@@ -470,114 +303,62 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
         ),
       ),
-
-      // ========================================================
-      // BOTTOM NAVIGATION
-      // ========================================================
-
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onBottomNavTap,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        indicatorColor: const Color(0xFFEAF3FA),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(
-              Icons.home_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons.home_rounded,
-            ),
-            label: 'Beranda',
-          ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons.calendar_month_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons.calendar_month_rounded,
-            ),
-            label: 'Jadwal',
-          ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons.history_outlined,
-            ),
-            selectedIcon: Icon(
-              Icons.history_rounded,
-            ),
-            label: 'Riwayat',
-          ),
-
-          NavigationDestination(
-            icon: Icon(
-              Icons.person_outline_rounded,
-            ),
-            selectedIcon: Icon(
-              Icons.person_rounded,
-            ),
-            label: 'Profil',
-          ),
-        ],
-      ),
     );
   }
-
-  // ============================================================
-  // CARD AKSES CEPAT
-  // ============================================================
 
   Widget _menuCard({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(13),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(13),
         child: Container(
-          height: 125,
-          padding: const EdgeInsets.all(17),
+          constraints: const BoxConstraints(minHeight: 112),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(13),
             border: Border.all(
               color: const Color(0xFFE5E7EB),
             ),
           ),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF3FA),
-                  borderRadius:
-                      BorderRadius.circular(11),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF2F6FA3),
-                  size: 24,
+                  color: primaryColor,
+                  size: 21,
                 ),
               ),
-
+              const SizedBox(height: 10),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.25,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF202124),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 11,
+                  height: 1.3,
+                  color: secondaryTextColor,
                 ),
               ),
             ],
