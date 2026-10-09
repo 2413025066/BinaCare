@@ -16,6 +16,12 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController =
       TextEditingController();
 
+  final TextEditingController _nisController =
+      TextEditingController();
+
+  final TextEditingController _nipController =
+      TextEditingController();
+
   final TextEditingController _passwordController =
       TextEditingController();
 
@@ -26,6 +32,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void dispose() {
     _emailController.dispose();
+    _nisController.dispose();
+    _nipController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -37,8 +45,9 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Sementara belum menggunakan database.
-    // Jika role Siswa, masuk ke Dashboard Siswa.
+    // LOGIN SEMENTARA
+    // Belum memeriksa data melalui database.
+
     if (selectedRole == 'Siswa') {
       Navigator.pushReplacement(
         context,
@@ -46,10 +55,7 @@ class _LoginPageState extends State<LoginPage> {
           builder: (context) => const StudentDashboard(),
         ),
       );
-    }
-
-    // Jika role Guru BK, masuk ke Dashboard Guru BK.
-    else {
+    } else {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -76,7 +82,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FA),
-
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -90,7 +95,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               child: Column(
                 children: [
-
                   // ================= LOGO =================
 
                   Container(
@@ -149,7 +153,6 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment:
                             CrossAxisAlignment.start,
                         children: [
-
                           const Text(
                             'Masuk',
                             style: TextStyle(
@@ -190,12 +193,12 @@ class _LoginPageState extends State<LoginPage> {
                                 child: _roleButton(
                                   title: 'Siswa',
                                   icon: Icons.school_outlined,
-                                  selected:
-                                      selectedRole == 'Siswa',
+                                  selected: selectedRole == 'Siswa',
                                   onTap: () {
                                     setState(() {
                                       selectedRole = 'Siswa';
                                     });
+                                    _formKey.currentState?.reset();
                                   },
                                 ),
                               ),
@@ -205,14 +208,13 @@ class _LoginPageState extends State<LoginPage> {
                               Expanded(
                                 child: _roleButton(
                                   title: 'Guru BK',
-                                  icon:
-                                      Icons.support_agent_outlined,
-                                  selected:
-                                      selectedRole == 'Guru BK',
+                                  icon: Icons.support_agent_outlined,
+                                  selected: selectedRole == 'Guru BK',
                                   onTap: () {
                                     setState(() {
                                       selectedRole = 'Guru BK';
                                     });
+                                    _formKey.currentState?.reset();
                                   },
                                 ),
                               ),
@@ -223,63 +225,63 @@ class _LoginPageState extends State<LoginPage> {
 
                           // ================= EMAIL =================
 
-                          const Text(
-                            'Email',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF202124),
-                            ),
-                          ),
+                          _fieldLabel('Email'),
 
                           const SizedBox(height: 8),
 
                           TextFormField(
                             controller: _emailController,
-                            keyboardType:
-                                TextInputType.emailAddress,
-                            textInputAction:
-                                TextInputAction.next,
-                            decoration: InputDecoration(
-                              hintText: 'Masukkan email',
-                              prefixIcon: const Icon(
-                                Icons.email_outlined,
-                                color: Color(0xFF4B5563),
-                              ),
-                              filled: true,
-                              fillColor:
-                                  const Color(0xFFF8FAFC),
-                              border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder:
-                                  OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE5E7EB),
-                                ),
-                              ),
-                              focusedBorder:
-                                  OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF2F6FA3),
-                                  width: 1.5,
-                                ),
-                              ),
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            decoration: _inputDecoration(
+                              hint: 'Masukkan email',
+                              icon: Icons.email_outlined,
+                            ),
+                            validator: (value) {
+                              final email = value?.trim() ?? '';
+
+                              if (email.isEmpty) {
+                                return 'Email harus diisi.';
+                              }
+
+                              if (!RegExp(
+                                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                              ).hasMatch(email)) {
+                                return 'Masukkan email yang valid.';
+                              }
+
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          // ================= NIS / NIP =================
+
+                          _fieldLabel(
+                            selectedRole == 'Siswa' ? 'NIS' : 'NIP',
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          TextFormField(
+                            controller: selectedRole == 'Siswa'
+                                ? _nisController
+                                : _nipController,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            decoration: _inputDecoration(
+                              hint: selectedRole == 'Siswa'
+                                  ? 'Masukkan NIS'
+                                  : 'Masukkan NIP',
+                              icon: Icons.badge_outlined,
                             ),
                             validator: (value) {
                               if (value == null ||
                                   value.trim().isEmpty) {
-                                return 'Email harus diisi.';
-                              }
-
-                              if (!value.contains('@')) {
-                                return 'Masukkan email yang valid.';
+                                return selectedRole == 'Siswa'
+                                    ? 'NIS harus diisi.'
+                                    : 'NIP harus diisi.';
                               }
 
                               return null;
@@ -290,31 +292,18 @@ class _LoginPageState extends State<LoginPage> {
 
                           // ================= PASSWORD =================
 
-                          const Text(
-                            'Password',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF202124),
-                            ),
-                          ),
+                          _fieldLabel('Password'),
 
                           const SizedBox(height: 8),
 
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            textInputAction:
-                                TextInputAction.done,
-                            onFieldSubmitted: (_) {
-                              _login();
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Masukkan password',
-                              prefixIcon: const Icon(
-                                Icons.lock_outline_rounded,
-                                color: Color(0xFF4B5563),
-                              ),
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _login(),
+                            decoration: _inputDecoration(
+                              hint: 'Masukkan password',
+                              icon: Icons.lock_outline_rounded,
                               suffixIcon: IconButton(
                                 onPressed: () {
                                   setState(() {
@@ -324,43 +313,14 @@ class _LoginPageState extends State<LoginPage> {
                                 },
                                 icon: Icon(
                                   _obscurePassword
-                                      ? Icons
-                                          .visibility_outlined
-                                      : Icons
-                                          .visibility_off_outlined,
-                                  color:
-                                      const Color(0xFF6B7280),
-                                ),
-                              ),
-                              filled: true,
-                              fillColor:
-                                  const Color(0xFFF8FAFC),
-                              border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder:
-                                  OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE5E7EB),
-                                ),
-                              ),
-                              focusedBorder:
-                                  OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF2F6FA3),
-                                  width: 1.5,
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: const Color(0xFF6B7280),
                                 ),
                               ),
                             ),
                             validator: (value) {
-                              if (value == null ||
-                                  value.isEmpty) {
+                              if (value == null || value.isEmpty) {
                                 return 'Password harus diisi.';
                               }
 
@@ -386,8 +346,7 @@ class _LoginPageState extends State<LoginPage> {
                                     const Color(0xFF2F6FA3),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                shape:
-                                    RoundedRectangleBorder(
+                                shape: RoundedRectangleBorder(
                                   borderRadius:
                                       BorderRadius.circular(12),
                                 ),
@@ -407,15 +366,15 @@ class _LoginPageState extends State<LoginPage> {
                           // ================= REGISTER =================
 
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
-                                'Belum punya akun?',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color:
-                                      Color(0xFF6B7280),
+                              const Flexible(
+                                child: Text(
+                                  'Belum punya akun?',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF6B7280),
+                                  ),
                                 ),
                               ),
 
@@ -424,11 +383,9 @@ class _LoginPageState extends State<LoginPage> {
                                 child: const Text(
                                   'Daftar',
                                   style: TextStyle(
-                                    color:
-                                        Color(0xFF2F6FA3),
+                                    color: Color(0xFF2F6FA3),
                                     fontSize: 13,
-                                    fontWeight:
-                                        FontWeight.w700,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
@@ -452,6 +409,55 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // ================= FIELD LABEL =================
+
+  Widget _fieldLabel(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF202124),
+      ),
+    );
+  }
+
+  // ================= INPUT DECORATION =================
+
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: Icon(
+        icon,
+        color: const Color(0xFF4B5563),
+      ),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color(0xFFE5E7EB),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(
+          color: Color(0xFF2F6FA3),
+          width: 1.5,
         ),
       ),
     );
