@@ -97,13 +97,13 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
+          top: Radius.circular(22),
         ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -119,7 +119,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 20),
                   const Text(
                     'Detail Pengajuan',
                     style: TextStyle(
@@ -128,7 +128,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                       color: teks,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   _detailItem(
                     Icons.person_outline,
                     'Nama Siswa',
@@ -154,7 +154,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     'Status',
                     pengajuan['status']!,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   if (pengajuan['status'] == 'Menunggu')
                     Row(
                       children: [
@@ -166,17 +166,15 @@ class _GuruDashboardState extends State<GuruDashboard> {
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
                               padding: const EdgeInsets.symmetric(
-                                vertical: 13,
-                              ),
-                              side: const BorderSide(
-                                color: Colors.red,
+                                vertical: 12,
                               ),
                             ),
                             child: const Text('Tolak'),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -187,7 +185,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                               backgroundColor: biru,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                vertical: 13,
+                                vertical: 12,
                               ),
                             ),
                             child: const Text('Terima'),
@@ -219,7 +217,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: latar,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
+          top: Radius.circular(22),
         ),
       ),
       builder: (sheetContext) {
@@ -229,7 +227,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(18, 12, 10, 10),
                   child: Row(
                     children: [
                       const Expanded(
@@ -238,6 +236,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: teks,
                           ),
                         ),
                       ),
@@ -277,13 +276,13 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
+          top: Radius.circular(22),
         ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,21 +292,24 @@ class _GuruDashboardState extends State<GuruDashboard> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: teks,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Icon(
-                  Icons.notifications_none_rounded,
-                  size: 42,
-                  color: biru,
+                const Center(
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 40,
+                    color: biru,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Notifikasi akan ditampilkan di sini '
-                  'ketika fitur notifikasi sudah diaktifkan.',
+                  'Notifikasi akan ditampilkan di sini ketika '
+                  'fitur notifikasi sudah diaktifkan.',
                   style: TextStyle(color: Colors.black54),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -362,19 +364,19 @@ class _GuruDashboardState extends State<GuruDashboard> {
         title: Row(
           children: [
             Container(
-              width: 38,
-              height: 38,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: biru.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(11),
               ),
               child: const Icon(
                 Icons.favorite_rounded,
                 color: biru,
-                size: 23,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 9),
             const Text(
               'BinaCare',
               style: TextStyle(
@@ -392,7 +394,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
             icon: const Icon(
               Icons.notifications_none_rounded,
               color: teks,
-              size: 26,
+              size: 25,
             ),
           ),
           Padding(
@@ -401,12 +403,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
               onTap: _bukaProfil,
               borderRadius: BorderRadius.circular(30),
               child: const CircleAvatar(
-                radius: 19,
+                radius: 18,
                 backgroundColor: Color(0xFFEAF3FA),
                 child: Icon(
                   Icons.person_rounded,
                   color: biru,
-                  size: 23,
+                  size: 22,
                 ),
               ),
             ),
@@ -415,35 +417,35 @@ class _GuruDashboardState extends State<GuruDashboard> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Halo, $_namaGuru 👋',
                 style: const TextStyle(
-                  fontSize: 23,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: teks,
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 5),
               const Text(
                 'Selamat datang di Dashboard Guru BK.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   color: Color(0xFF6B7280),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // Kartu pengajuan konseling
+              // Banner dibuat lebih ringkas.
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(22),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: biru,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
@@ -455,21 +457,21 @@ class _GuruDashboardState extends State<GuruDashboard> {
                             'Pengajuan Konseling',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 17,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 6),
                           Text(
                             '$jumlahMenunggu pengajuan menunggu '
                             'untuk diproses.',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.90),
-                              fontSize: 13,
-                              height: 1.5,
+                              fontSize: 12,
+                              height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 11),
                           ElevatedButton(
                             onPressed: _lihatSemuaPengajuan,
                             style: ElevatedButton.styleFrom(
@@ -477,17 +479,21 @@ class _GuruDashboardState extends State<GuruDashboard> {
                               foregroundColor: biru,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 11,
+                                horizontal: 14,
+                                vertical: 9,
                               ),
+                              minimumSize: const Size(0, 36),
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                             child: const Text(
                               'Lihat Pengajuan',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
+                                fontSize: 12,
                               ),
                             ),
                           ),
@@ -496,24 +502,23 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      width: 65,
-                      height: 65,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: const Icon(
                         Icons.assignment_outlined,
                         color: Colors.white,
-                        size: 36,
+                        size: 26,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 28),
-
+              const SizedBox(height: 20),
               const Text(
                 'Layanan Guru BK',
                 style: TextStyle(
@@ -522,15 +527,19 @@ class _GuruDashboardState extends State<GuruDashboard> {
                   color: teks,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 11),
 
-              GridView.count(
-                crossAxisCount: 2,
+              // Tinggi kartu ditetapkan langsung, bukan memakai rasio.
+              GridView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 13,
-                mainAxisSpacing: 13,
-                childAspectRatio: 1.12,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisExtent: 120,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
                 children: [
                   _menuCard(
                     icon: Icons.assignment_outlined,
@@ -559,8 +568,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 ],
               ),
 
-              const SizedBox(height: 28),
-
+              const SizedBox(height: 20),
               Row(
                 children: [
                   const Expanded(
@@ -585,24 +593,26 @@ class _GuruDashboardState extends State<GuruDashboard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-
+              const SizedBox(height: 6),
               if (_daftarPengajuan.isEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE5E7EB),
+                    ),
                   ),
                   child: const Column(
                     children: [
                       Icon(
                         Icons.inbox_outlined,
-                        size: 42,
+                        size: 38,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: 8),
                       Text('Belum ada pengajuan konseling.'),
                     ],
                   ),
@@ -629,53 +639,53 @@ class _GuruDashboardState extends State<GuruDashboard> {
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(15),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(15),
         child: Container(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(15),
             border: Border.all(
               color: const Color(0xFFE5E7EB),
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
-                width: 43,
-                height: 43,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: biru.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   color: biru,
-                  size: 25,
+                  size: 19,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: teks,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   color: Color(0xFF6B7280),
                 ),
               ),
@@ -690,8 +700,8 @@ class _GuruDashboardState extends State<GuruDashboard> {
     final pengajuan = _daftarPengajuan[index];
     final status = pengajuan['status']!;
 
-    Color warnaStatus;
-    Color latarStatus;
+    late final Color warnaStatus;
+    late final Color latarStatus;
 
     if (status == 'Diterima') {
       warnaStatus = const Color(0xFF218653);
@@ -706,10 +716,10 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFFE5E7EB),
         ),
@@ -720,14 +730,14 @@ class _GuruDashboardState extends State<GuruDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 23,
+                radius: 21,
                 backgroundColor: biru.withValues(alpha: 0.10),
                 child: const Icon(
                   Icons.person_outline_rounded,
                   color: biru,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -735,12 +745,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     Text(
                       pengajuan['nama']!,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: teks,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       'Kelas ${pengajuan['kelas']}',
                       style: const TextStyle(
@@ -748,22 +758,22 @@ class _GuruDashboardState extends State<GuruDashboard> {
                         color: Color(0xFF6B7280),
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(
                       pengajuan['alasan']!,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: teks,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 9,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: latarStatus,
@@ -780,9 +790,9 @@ class _GuruDashboardState extends State<GuruDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(height: 1),
           const SizedBox(height: 10),
+          const Divider(height: 1),
+          const SizedBox(height: 6),
           Row(
             children: [
               const Icon(
@@ -804,14 +814,14 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 onPressed: () => _lihatDetail(index),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 36),
+                  minimumSize: const Size(0, 34),
                 ),
                 child: const Text('Detail'),
               ),
             ],
           ),
           if (status == 'Menunggu') ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Row(
               children: [
                 Expanded(
@@ -820,19 +830,19 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                     ),
                     child: const Text('Tolak'),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 9),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => _terimaPengajuan(index),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: biru,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 9),
                     ),
                     child: const Text('Terima'),
                   ),
@@ -851,16 +861,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 17),
+      padding: const EdgeInsets.only(bottom: 15),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: biru,
-            size: 22,
-          ),
-          const SizedBox(width: 12),
+          Icon(icon, color: biru, size: 21),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -872,11 +878,11 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     color: Color(0xFF6B7280),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: teks,
                   ),
