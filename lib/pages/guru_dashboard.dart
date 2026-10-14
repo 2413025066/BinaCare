@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'profil_guru_page.dart';
+import 'jadwal_guru_page.dart';
+import 'data_siswa_page.dart';
+import 'riwayat_konseling_guru_page.dart';
 
 class GuruDashboard extends StatefulWidget {
   const GuruDashboard({super.key});
@@ -602,20 +605,35 @@ class _GuruDashboardState extends State<GuruDashboard> {
         _lihatSemuaPengajuan();
         break;
       case 'Jadwal Konseling':
-        _tampilkanPesan(
-          'Halaman Jadwal Konseling akan dibuat berikutnya.',
-        );
-        break;
+  Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (context) => JadwalGuruPage(
+        daftarPengajuan: _daftarPengajuan,
+      ),
+    ),
+  );
+  break;
       case 'Data Siswa':
-        _tampilkanPesan(
-          'Halaman Data Siswa akan dibuat berikutnya.',
-        );
-        break;
+  Navigator.push(
+    context,
+    MaterialPageRoute<void>(
+      builder: (context) => DataSiswaPage(
+        daftarPengajuan: _daftarPengajuan,
+      ),
+    ),
+  );
+  break;
       case 'Riwayat Konseling':
-        _tampilkanPesan(
-          'Halaman Riwayat Konseling akan dibuat berikutnya.',
-        );
-        break;
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => RiwayatKonselingGuruPage(
+        daftarPengajuan: _daftarPengajuan,
+      ),
+    ),
+  );
+  break;
     }
   }
 
