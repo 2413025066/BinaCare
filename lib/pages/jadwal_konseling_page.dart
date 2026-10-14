@@ -1,17 +1,62 @@
+
 import 'package:flutter/material.dart';
 
-class JadwalKonselingPage extends StatelessWidget {
+class JadwalKonselingPage extends StatefulWidget {
   const JadwalKonselingPage({super.key});
 
   @override
+  State<JadwalKonselingPage> createState() =>
+      _JadwalKonselingPageState();
+}
+
+class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
+  final Color primaryColor = const Color(0xFF2F6FA3);
+
+  String selectedFilter = 'Semua';
+
+  final List<Map<String, String>> jadwalList = [
+    {
+      'topik': 'Kesulitan belajar dan akademik',
+      'guru': 'Ibu Siti Rahma, S.Pd.',
+      'tanggal': '15 Oktober 2026',
+      'waktu': '09:00 - 09:30',
+      'tempat': 'Ruang BK',
+      'status': 'Dikonfirmasi',
+    },
+    {
+      'topik': 'Konsultasi pemilihan jurusan',
+      'guru': 'Ibu Siti Rahma, S.Pd.',
+      'tanggal': '20 Oktober 2026',
+      'waktu': '10:00 - 10:30',
+      'tempat': 'Ruang BK',
+      'status': 'Dikonfirmasi',
+    },
+    {
+      'topik': 'Konseling pengembangan diri',
+      'guru': 'Bapak Andi Pratama, S.Pd.',
+      'tanggal': '5 Oktober 2026',
+      'waktu': '13:00 - 13:30',
+      'tempat': 'Ruang BK',
+      'status': 'Selesai',
+    },
+  ];
+
+  List<Map<String, String>> get filteredJadwal {
+    if (selectedFilter == 'Selesai') {
+      return jadwalList
+          .where((jadwal) => jadwal['status'] == 'Selesai')
+          .toList();
+    }
+
+    return jadwalList;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final jadwal = filteredJadwal;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FA),
-
-      // ============================================================
-      // APP BAR
-      // ============================================================
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -28,287 +73,203 @@ class JadwalKonselingPage extends StatelessWidget {
           color: Color(0xFF202124),
         ),
       ),
-
-      // ============================================================
-      // BODY
-      // ============================================================
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ======================================================
-            // JUDUL
-            // ======================================================
-
             const Text(
               'Jadwal Kamu',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 23,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF202124),
               ),
             ),
-
-            const SizedBox(height: 6),
-
+            const SizedBox(height: 7),
             const Text(
-              'Berikut jadwal konseling yang telah disetujui oleh Guru BK.',
+              'Lihat jadwal konseling yang telah disetujui oleh Guru BK.',
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
                 color: Color(0xFF6B7280),
               ),
             ),
+            const SizedBox(height: 22),
 
-            const SizedBox(height: 20),
-
-            // ======================================================
-            // KARTU JADWAL
-            // ======================================================
-
+            // RINGKASAN JADWAL
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF2F6FA3),
+                color: primaryColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-
-                  // ==================================================
-                  // HEADER KARTU
-                  // ==================================================
-
-                  Row(
-                    children: [
-
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(
-                            alpha: 0.15,
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_rounded,
+                      color: Colors.white,
+                      size: 29,
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total Jadwal',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
                           ),
-                          borderRadius:
-                              BorderRadius.circular(13),
                         ),
-                        child: const Icon(
-                          Icons.event_available_rounded,
-                          color: Colors.white,
-                          size: 27,
+                        const SizedBox(height: 4),
+                        Text(
+                          '${jadwalList.length} jadwal konseling',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-
-                      const SizedBox(width: 13),
-
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          children: [
-
-                            Text(
-                              'Konseling Akademik',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-
-                            SizedBox(height: 4),
-
-                            Text(
-                              'Jadwal telah dikonfirmasi',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Pastikan kamu hadir tepat waktu.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // ==================================================
-                  // GURU BK
-                  // ==================================================
-
-                  _infoRow(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Guru BK',
-                    value: 'Ibu Siti Rahma, S.Pd.',
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // ==================================================
-                  // TANGGAL
-                  // ==================================================
-
-                  _infoRow(
-                    icon: Icons.calendar_today_outlined,
-                    label: 'Tanggal',
-                    value: '15 Oktober 2026',
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // ==================================================
-                  // WAKTU
-                  // ==================================================
-
-                  _infoRow(
-                    icon: Icons.access_time_rounded,
-                    label: 'Waktu',
-                    value: '09:00 - 09:30',
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // ==================================================
-                  // TEMPAT
-                  // ==================================================
-
-                  _infoRow(
-                    icon: Icons.location_on_outlined,
-                    label: 'Tempat',
-                    value: 'Ruang BK',
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 25),
 
-            // ======================================================
-            // DETAIL KONSELING
-            // ======================================================
-
+            // JUDUL DAFTAR
             const Text(
-              'Detail Konseling',
+              'Daftar Jadwal',
               style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF202124),
               ),
             ),
+            const SizedBox(height: 14),
 
-            const SizedBox(height: 13),
+            // FILTER: SEMUA DAN SELESAI
+            Row(
+              children: ['Semua', 'Selesai'].map((filter) {
+                final bool active = selectedFilter == filter;
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE5E7EB),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-
-                  // ==================================================
-                  // TOPIK
-                  // ==================================================
-
-                  const Text(
-                    'Topik Konseling',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
+                return Padding(
+                  padding: const EdgeInsets.only(right: 9),
+                  child: ChoiceChip(
+                    label: Text(filter),
+                    selected: active,
+                    showCheckmark: false,
+                    selectedColor: primaryColor,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                      color: active
+                          ? primaryColor
+                          : const Color(0xFFE5E7EB),
                     ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    'Kesulitan belajar dan akademik',
-                    style: TextStyle(
-                      fontSize: 15,
+                    labelStyle: TextStyle(
+                      color: active
+                          ? Colors.white
+                          : const Color(0xFF4B5563),
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF202124),
                     ),
+                    onSelected: (_) {
+                      setState(() {
+                        selectedFilter = filter;
+                      });
+                    },
                   ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 15),
 
-                  const SizedBox(height: 18),
-
-                  // ==================================================
-                  // STATUS
-                  // ==================================================
-
-                  const Text(
-                    'Status',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                    ),
+            // DAFTAR KARTU JADWAL
+            if (jadwal.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFE5E7EB),
                   ),
-
-                  const SizedBox(height: 7),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
+                ),
+                child: const Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy_rounded,
+                      size: 45,
+                      color: Color(0xFF9CA3AF),
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F5E9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Dikonfirmasi',
+                    SizedBox(height: 12),
+                    Text(
+                      'Belum ada jadwal',
                       style: TextStyle(
-                        color: Color(0xFF2E7D32),
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        color: Color(0xFF374151),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Jadwal konseling akan ditampilkan di sini.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...jadwal.map((item) => _buildJadwalCard(item)),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 22),
 
-            // ======================================================
             // INFORMASI
-            // ======================================================
-
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(17),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFEAF3FA),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: const Row(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   Icon(
                     Icons.info_outline_rounded,
                     color: Color(0xFF2F6FA3),
                     size: 22,
                   ),
-
                   SizedBox(width: 11),
-
                   Expanded(
                     child: Text(
-                      'Harap datang sesuai jadwal. Jika kamu berhalangan hadir, silakan hubungi Guru BK.',
+                      'Harap datang sesuai jadwal. Jika berhalangan hadir, '
+                      'silakan hubungi Guru BK.',
                       style: TextStyle(
                         fontSize: 13,
                         height: 1.5,
@@ -319,57 +280,158 @@ class JadwalKonselingPage extends StatelessWidget {
                 ],
               ),
             ),
-
-            const SizedBox(height: 10),
           ],
         ),
       ),
     );
   }
 
-  // ==============================================================
-  // INFO ROW
-  // ==============================================================
+  Widget _buildJadwalCard(Map<String, String> item) {
+    final bool selesai = item['status'] == 'Selesai';
 
-  static Widget _infoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
+    final Color statusColor = selesai
+        ? const Color(0xFF2E7D32)
+        : primaryColor;
+
+    final Color statusBackground = selesai
+        ? const Color(0xFFE8F5E9)
+        : const Color(0xFFEAF3FA);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF3FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  selesai
+                      ? Icons.task_alt_rounded
+                      : Icons.event_available_rounded,
+                  color: primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['topik']!,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF202124),
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusBackground,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item['status']!,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 17),
+          const Divider(
+            height: 1,
+            color: Color(0xFFEEEEEE),
+          ),
+          const SizedBox(height: 15),
+          _infoRow(
+            Icons.person_outline_rounded,
+            'Guru BK',
+            item['guru']!,
+          ),
+          const SizedBox(height: 12),
+          _infoRow(
+            Icons.calendar_today_outlined,
+            'Tanggal',
+            item['tanggal']!,
+          ),
+          const SizedBox(height: 12),
+          _infoRow(
+            Icons.access_time_rounded,
+            'Waktu',
+            item['waktu']!,
+          ),
+          const SizedBox(height: 12),
+          _infoRow(
+            Icons.location_on_outlined,
+            'Tempat',
+            item['tempat']!,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         Icon(
           icon,
-          color: Colors.white,
-          size: 21,
+          size: 19,
+          color: const Color(0xFF6B7280),
         ),
-
-        const SizedBox(width: 12),
-
+        const SizedBox(width: 11),
         Expanded(
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Text(
                 label,
                 style: const TextStyle(
-                  color: Colors.white70,
                   fontSize: 12,
+                  color: Color(0xFF6B7280),
                 ),
               ),
-
-              const SizedBox(height: 2),
-
+              const SizedBox(height: 3),
               Text(
                 value,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
+                  color: Color(0xFF374151),
                 ),
               ),
             ],
