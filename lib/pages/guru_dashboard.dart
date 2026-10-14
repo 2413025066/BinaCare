@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'profil_guru_page.dart';
 
@@ -58,34 +57,279 @@ class _GuruDashboardState extends State<GuruDashboard> {
     );
   }
 
-  void _terimaPengajuan(int index) {
+  Future<void> _terimaPengajuan(int index) async {
     if (_daftarPengajuan[index]['status'] != 'Menunggu') {
       _tampilkanPesan('Pengajuan ini sudah diproses.');
       return;
     }
 
-    setState(() {
-      _daftarPengajuan[index]['status'] = 'Diterima';
-    });
+    DateTime? tanggal;
+    TimeOfDay? jamMulai;
+    TimeOfDay? jamSelesai;
+    final tempatController = TextEditingController(text: 'Ruang BK');
 
-    _tampilkanPesan(
-      'Pengajuan ${_daftarPengajuan[index]['nama']} diterima.',
-    );
+    String formatTanggal(DateTime value) {
+      const bulan = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
+      ];
+
+      return '${value.day} ${bulan[value.month - 1]} ${value.year}';
+    }
+
+    String formatJam(TimeOfDay value) {
+      return '${value.hour.toString().padLeft(2, '0')}:'
+          '${value.minute.toString().padLeft(2, '0')}';
+    }
+
+    try {
+      final hasil = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            title: const Text('Atur Jadwal Konseling'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Siswa: ${_daftarPengajuan[index]['nama'] ?? '-'}',
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_month),
+                    label: Text(
+                      tanggal == null
+                          ? 'Pilih tanggal'
+                          : formatTanggal(tanggal!),
+                    ),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final today = DateTime(
+                        now.year,
+                        now.month,
+                        now.day,
+                      );
+
+                      final picked = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: tanggal ?? today,
+                        firstDate: today,
+                        lastDate: DateTime(now.year + 3),
+                      );
+
+                      if (picked != null) {
+                        setDialogState(() => tanggal = picked);
+                      }
+                    },
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.access_time),
+                    label: Text(
+                      jamMulai == null
+                          ? 'Pilih jam mulai'
+                          : 'Mulai ${formatJam(jamMulai!)}',
+                    ),
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: dialogContext,
+                        initialTime: jamMulai ??
+                            const TimeOfDay(hour: 9, minute: 0),
+                      );
+
+                      if (picked != null) {
+                        setDialogState(() => jamMulai = picked);
+                      }
+                    },
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.timelapse),
+                    label: Text(
+                      jamSelesai == null
+                          ? 'Pilih jam selesai'
+                          : 'Selesai ${formatJam(jamSelesai!)}',
+                    ),
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                        context: dialogContext,
+                        initialTime: jamSelesai ??
+                            const TimeOfDay(hour: 9, minute: 30),
+                      );
+
+                      if (picked != null) {
+                        setDialogState(() => jamSelesai = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: tempatController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tempat konseling',
+                      hintText: 'Contoh: Ruang BK',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (tanggal == null ||
+                      jamMulai == null ||
+                      jamSelesai == null ||
+                      tempatController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Lengkapi tanggal, jam, dan tempat konseling.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  final start =
+                      jamMulai!.hour * 60 + jamMulai!.minute;
+                  final finish =
+                      jamSelesai!.hour * 60 + jamSelesai!.minute;
+
+                  if (finish <= start) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Jam selesai harus setelah jam mulai.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(dialogContext, true);
+                },
+                child: const Text('Simpan Jadwal'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (hasil != true || !mounted) return;
+
+      setState(() {
+        _daftarPengajuan[index]['status'] = 'Diterima';
+        _daftarPengajuan[index]['jadwalTanggal'] =
+            formatTanggal(tanggal!);
+        _daftarPengajuan[index]['jadwalWaktu'] =
+            '${formatJam(jamMulai!)} - ${formatJam(jamSelesai!)}';
+        _daftarPengajuan[index]['jadwalTempat'] =
+            tempatController.text.trim();
+      });
+
+      _tampilkanPesan(
+        'Pengajuan diterima dan jadwal berhasil dibuat.',
+      );
+    } finally {
+      tempatController.dispose();
+    }
   }
 
-  void _tolakPengajuan(int index) {
+  Future<void> _tolakPengajuan(int index) async {
     if (_daftarPengajuan[index]['status'] != 'Menunggu') {
       _tampilkanPesan('Pengajuan ini sudah diproses.');
       return;
     }
 
-    setState(() {
-      _daftarPengajuan[index]['status'] = 'Ditolak';
-    });
+    final alasanController = TextEditingController();
 
-    _tampilkanPesan(
-      'Pengajuan ${_daftarPengajuan[index]['nama']} ditolak.',
-    );
+    try {
+      final alasan = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Tolak Pengajuan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tuliskan alasan penolakan untuk '
+                '${_daftarPengajuan[index]['nama'] ?? 'siswa ini'}.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: alasanController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Alasan penolakan',
+                  hintText: 'Masukkan alasan yang jelas',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                if (alasanController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Alasan penolakan wajib diisi.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(
+                  dialogContext,
+                  alasanController.text.trim(),
+                );
+              },
+              child: const Text('Tolak Pengajuan'),
+            ),
+          ],
+        ),
+      );
+
+      if (alasan == null || !mounted) return;
+
+      setState(() {
+        _daftarPengajuan[index]['status'] = 'Ditolak';
+        _daftarPengajuan[index]['alasanPenolakan'] = alasan;
+      });
+
+      _tampilkanPesan(
+        'Pengajuan ditolak. Alasan berhasil disimpan.',
+      );
+    } finally {
+      alasanController.dispose();
+    }
   }
 
   void _lihatDetail(int index) {
@@ -97,13 +341,13 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
+          top: Radius.circular(24),
         ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -119,7 +363,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
                   const Text(
                     'Detail Pengajuan',
                     style: TextStyle(
@@ -128,7 +372,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                       color: teks,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
                   _detailItem(
                     Icons.person_outline,
                     'Nama Siswa',
@@ -154,7 +398,32 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     'Status',
                     pengajuan['status']!,
                   ),
-                  const SizedBox(height: 18),
+                  if (pengajuan['status'] == 'Ditolak' &&
+                      pengajuan['alasanPenolakan'] != null)
+                    _detailItem(
+                      Icons.info_outline,
+                      'Alasan Penolakan',
+                      pengajuan['alasanPenolakan']!,
+                    ),
+                  if (pengajuan['status'] == 'Diterima' &&
+                      pengajuan['jadwalTanggal'] != null) ...[
+                    _detailItem(
+                      Icons.calendar_month,
+                      'Tanggal Konseling',
+                      pengajuan['jadwalTanggal']!,
+                    ),
+                    _detailItem(
+                      Icons.access_time,
+                      'Waktu Konseling',
+                      pengajuan['jadwalWaktu']!,
+                    ),
+                    _detailItem(
+                      Icons.location_on_outlined,
+                      'Tempat Konseling',
+                      pengajuan['jadwalTempat']!,
+                    ),
+                  ],
+                  const SizedBox(height: 20),
                   if (pengajuan['status'] == 'Menunggu')
                     Row(
                       children: [
@@ -166,15 +435,15 @@ class _GuruDashboardState extends State<GuruDashboard> {
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.red,
-                              side: const BorderSide(color: Colors.red),
                               padding: const EdgeInsets.symmetric(
-                                vertical: 12,
+                                vertical: 13,
                               ),
+                              side: const BorderSide(color: Colors.red),
                             ),
                             child: const Text('Tolak'),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -185,7 +454,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                               backgroundColor: biru,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                vertical: 12,
+                                vertical: 13,
                               ),
                             ),
                             child: const Text('Terima'),
@@ -217,7 +486,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: latar,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
+          top: Radius.circular(24),
         ),
       ),
       builder: (sheetContext) {
@@ -227,7 +496,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 12, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
                   child: Row(
                     children: [
                       const Expanded(
@@ -254,12 +523,14 @@ class _GuruDashboardState extends State<GuruDashboard> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.fromLTRB(
-                            16, 0, 16, 20,
+                            16,
+                            0,
+                            16,
+                            20,
                           ),
                           itemCount: _daftarPengajuan.length,
-                          itemBuilder: (context, index) {
-                            return _pengajuanCard(index);
-                          },
+                          itemBuilder: (context, index) =>
+                              _pengajuanCard(index),
                         ),
                 ),
               ],
@@ -276,13 +547,13 @@ class _GuruDashboardState extends State<GuruDashboard> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(22),
+          top: Radius.circular(24),
         ),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,17 +570,17 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 const Center(
                   child: Icon(
                     Icons.notifications_none_rounded,
-                    size: 40,
+                    size: 42,
                     color: biru,
                   ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Notifikasi akan ditampilkan di sini ketika '
-                  'fitur notifikasi sudah diaktifkan.',
+                  'Notifikasi akan ditampilkan di sini ketika fitur '
+                  'notifikasi sudah diaktifkan.',
                   style: TextStyle(color: Colors.black54),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -364,19 +635,19 @@ class _GuruDashboardState extends State<GuruDashboard> {
         title: Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: biru.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
                 Icons.favorite_rounded,
                 color: biru,
-                size: 22,
+                size: 23,
               ),
             ),
-            const SizedBox(width: 9),
+            const SizedBox(width: 10),
             const Text(
               'BinaCare',
               style: TextStyle(
@@ -394,7 +665,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
             icon: const Icon(
               Icons.notifications_none_rounded,
               color: teks,
-              size: 25,
+              size: 26,
             ),
           ),
           Padding(
@@ -403,12 +674,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
               onTap: _bukaProfil,
               borderRadius: BorderRadius.circular(30),
               child: const CircleAvatar(
-                radius: 18,
+                radius: 19,
                 backgroundColor: Color(0xFFEAF3FA),
                 child: Icon(
                   Icons.person_rounded,
                   color: biru,
-                  size: 22,
+                  size: 23,
                 ),
               ),
             ),
@@ -424,28 +695,28 @@ class _GuruDashboardState extends State<GuruDashboard> {
               Text(
                 'Halo, $_namaGuru 👋',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 23,
                   fontWeight: FontWeight.bold,
                   color: teks,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 6),
               const Text(
                 'Selamat datang di Dashboard Guru BK.',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: Color(0xFF6B7280),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 20),
 
-              // Banner dibuat lebih ringkas.
+              // Banner ringkasan pengajuan.
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: biru,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
@@ -457,21 +728,20 @@ class _GuruDashboardState extends State<GuruDashboard> {
                             'Pengajuan Konseling',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 17,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 7),
                           Text(
-                            '$jumlahMenunggu pengajuan menunggu '
-                            'untuk diproses.',
+                            '$jumlahMenunggu pengajuan menunggu untuk diproses.',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.90),
-                              fontSize: 12,
+                              fontSize: 13,
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 11),
+                          const SizedBox(height: 13),
                           ElevatedButton(
                             onPressed: _lihatSemuaPengajuan,
                             style: ElevatedButton.styleFrom(
@@ -479,46 +749,42 @@ class _GuruDashboardState extends State<GuruDashboard> {
                               foregroundColor: biru,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9,
+                                horizontal: 15,
+                                vertical: 10,
                               ),
-                              minimumSize: const Size(0, 36),
-                              tapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: const Text(
                               'Lihat Pengajuan',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Container(
-                      width: 46,
-                      height: 46,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(13),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(
                         Icons.assignment_outlined,
                         color: Colors.white,
-                        size: 26,
+                        size: 29,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               const Text(
                 'Layanan Guru BK',
                 style: TextStyle(
@@ -527,9 +793,8 @@ class _GuruDashboardState extends State<GuruDashboard> {
                   color: teks,
                 ),
               ),
-              const SizedBox(height: 11),
+              const SizedBox(height: 12),
 
-              // Tinggi kartu ditetapkan langsung, bukan memakai rasio.
               GridView(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -537,8 +802,8 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisExtent: 120,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 13,
+                  mainAxisSpacing: 13,
                 ),
                 children: [
                   _menuCard(
@@ -568,7 +833,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
               Row(
                 children: [
                   const Expanded(
@@ -597,7 +862,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
               if (_daftarPengajuan.isEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -609,10 +874,10 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     children: [
                       Icon(
                         Icons.inbox_outlined,
-                        size: 38,
+                        size: 40,
                         color: Colors.grey,
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 10),
                       Text('Belum ada pengajuan konseling.'),
                     ],
                   ),
@@ -639,14 +904,14 @@ class _GuruDashboardState extends State<GuruDashboard> {
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: const Color(0xFFE5E7EB),
             ),
@@ -660,13 +925,9 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 height: 32,
                 decoration: BoxDecoration(
                   color: biru.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: Icon(
-                  icon,
-                  color: biru,
-                  size: 19,
-                ),
+                child: Icon(icon, color: biru, size: 19),
               ),
               const SizedBox(height: 6),
               Text(
@@ -674,7 +935,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: teks,
                 ),
@@ -682,7 +943,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 10,
@@ -716,7 +977,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -730,14 +991,14 @@ class _GuruDashboardState extends State<GuruDashboard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 21,
+                radius: 22,
                 backgroundColor: biru.withValues(alpha: 0.10),
                 child: const Icon(
                   Icons.person_outline_rounded,
                   color: biru,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,7 +1006,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     Text(
                       pengajuan['nama']!,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: teks,
                       ),
@@ -762,7 +1023,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     Text(
                       pengajuan['alasan']!,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         color: teks,
                       ),
                     ),
@@ -790,9 +1051,9 @@ class _GuruDashboardState extends State<GuruDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           const Divider(height: 1),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Row(
             children: [
               const Icon(
@@ -813,15 +1074,17 @@ class _GuruDashboardState extends State<GuruDashboard> {
               TextButton(
                 onPressed: () => _lihatDetail(index),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 34),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                  ),
+                  minimumSize: const Size(0, 36),
                 ),
                 child: const Text('Detail'),
               ),
             ],
           ),
           if (status == 'Menunggu') ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Row(
               children: [
                 Expanded(
@@ -830,19 +1093,23 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ),
                     ),
                     child: const Text('Tolak'),
                   ),
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => _terimaPengajuan(index),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: biru,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                      ),
                     ),
                     child: const Text('Terima'),
                   ),
@@ -861,12 +1128,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
     String value,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 17),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: biru, size: 21),
-          const SizedBox(width: 11),
+          Icon(icon, color: biru, size: 22),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,11 +1145,11 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     color: Color(0xFF6B7280),
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: teks,
                   ),
