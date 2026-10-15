@@ -6,53 +6,139 @@
 - **Nama Pengembang:** Dinda Aulia Natasya
 - **NPM:** 2413025066
 - **Kelas:** PTI 24B
+- **Program Studi:** Pendidikan Teknologi Informasi
+- **Universitas:** Universitas Lampung
 - **Mata Kuliah:** Mobile Programming
 - **Teknologi:** Flutter dan Dart
 - **Repositori GitHub:** https://github.com/2413025066/BinaCare
 
-## 2. AI yang Digunakan
+## 2. Daftar Alat AI yang Digunakan
 
-AI yang digunakan dalam proses pengembangan aplikasi BinaCare adalah **ChatGPT dari OpenAI**.
+Alat kecerdasan buatan (AI) yang digunakan selama proses pengembangan aplikasi BinaCare adalah **ChatGPT dari OpenAI**.
 
-ChatGPT digunakan sebagai alat bantu untuk memahami pemrograman Flutter dan Dart, mencari solusi atas kendala kode, menyempurnakan tampilan dan navigasi aplikasi, serta menyusun dokumentasi proyek.
+ChatGPT digunakan sebagai alat bantu dalam memahami kode Flutter dan Dart, mencari solusi terhadap kendala pemrograman, menyempurnakan tampilan antarmuka, mengembangkan alur fitur, serta menyusun dokumentasi proyek.
 
-## 3. Bentuk Penggunaan AI
+Penggunaan AI dilakukan sebagai pendukung proses pembelajaran dan pengembangan aplikasi. Saran yang diberikan tetap perlu ditinjau dan disesuaikan dengan kebutuhan proyek.
 
-Penggunaan ChatGPT dalam pengembangan BinaCare meliputi:
+## 3. Pembagian Peran Pengembangan
 
-1. **Bantuan pemrograman:** membantu memahami kode Flutter dan Dart serta memberikan saran perbaikan ketika ditemukan kesalahan kode.
+### A. Modul yang Mendapat Bantuan AI
 
-2. **Pengembangan antarmuka:** memberikan saran untuk menyempurnakan tampilan halaman Login, Register, Dashboard Siswa, Dashboard Guru BK, dan halaman terkait.
+**1. Halaman Login dan Register**
 
-3. **Pengembangan fitur Guru BK:** membantu memahami dan menyusun solusi untuk fitur pengajuan konseling, jadwal konseling, data siswa, riwayat konseling, serta profil Guru BK.
+AI membantu memberikan saran untuk menyempurnakan tampilan halaman Login dan Register agar lebih ringkas dan rapi. Bantuan juga mencakup penyusunan formulir, validasi input, pilihan peran Siswa dan Guru BK, serta navigasi menuju halaman yang sesuai.
 
-4. **Pemecahan masalah:** membantu menganalisis kendala teknis dan memberikan alternatif solusi yang dapat diperiksa serta diuji oleh pengembang.
+**2. Dashboard Siswa**
 
+AI membantu memberikan saran untuk penyempurnaan tampilan Dashboard Siswa dan penyusunan menu layanan agar informasi lebih terstruktur dan mudah diakses.
 
-## 4. Contoh Penggunaan AI
+**3. Pengajuan Konseling**
 
-Contoh permintaan yang digunakan selama proses pengembangan antara lain:
+AI membantu memahami alur pengajuan konseling, penyusunan formulir, pemilihan Guru BK, pemilihan jadwal, dan validasi input sebelum pengajuan dikirim.
 
-- Meminta bantuan untuk memahami dan memperbaiki kesalahan kode Flutter.
-- Meminta saran untuk merapikan tampilan halaman Login dan Register.
-- Meminta bantuan menyusun fitur Dashboard Guru BK dan navigasi menuju halaman terkait.
-- Meminta bantuan menyusun dokumentasi proyek agar sesuai dengan fitur yang telah dikembangkan.
+**4. Dashboard Guru BK**
 
-Contoh tersebut merupakan ringkasan jenis bantuan yang digunakan. Implementasi akhirnya tetap perlu disesuaikan dengan kode dan kebutuhan proyek.
+AI membantu memberikan saran untuk pengembangan tampilan dashboard, penyajian daftar pengajuan konseling, penampilan detail pengajuan, serta interaksi dasar untuk menerima atau menolak pengajuan.
 
-## 5. Peran dan Tanggung Jawab Pengembang
+**5. Jadwal Konseling Guru BK**
 
-Pengembang bertanggung jawab untuk:
+AI membantu memberikan saran mengenai penyajian jadwal konseling dan penyaringan jadwal berdasarkan kategori yang tersedia.
 
-- Menentukan kebutuhan dan tujuan aplikasi BinaCare.
-- Meninjau dan menyesuaikan saran yang diberikan oleh AI.
-- Memeriksa kode serta menguji aplikasi.
-- Memahami fungsi fitur yang dikembangkan.
-- Memastikan dokumentasi sesuai dengan kondisi aplikasi yang sebenarnya.
+**6. Data Siswa**
 
-## 6. Batasan Penggunaan AI
+AI membantu memberikan saran untuk penyajian daftar siswa berdasarkan data pengajuan konseling dan tampilan detail informasi siswa.
 
-ChatGPT digunakan sebagai alat bantu, bukan sebagai pengganti proses pembelajaran dan tanggung jawab pengembang. Saran AI dapat mengandung kesalahan sehingga perlu diperiksa sebelum diterapkan.
+**7. Riwayat Konseling Guru BK**
 
-Pada tahap pengembangan yang didokumentasikan, sejumlah fitur masih menggunakan data sementara. Firebase Authentication dan Cloud Firestore belum terintegrasi, sehingga data belum tersimpan secara permanen melalui layanan tersebut.
+AI membantu memberikan saran mengenai penyajian pengajuan yang telah diproses, status pengajuan, jadwal untuk pengajuan yang diterima, dan alasan penolakan untuk pengajuan yang ditolak.
 
+**8. Pemecahan Masalah Kode**
+
+AI membantu menjelaskan kesalahan kode Flutter dan memberikan alternatif perbaikan. Salah satu kendala yang pernah dibahas adalah penggunaan `const` pada teks yang memuat variabel dinamis di Dashboard Guru BK.
+
+**9. Dokumentasi Proyek**
+
+AI membantu menyusun dan merapikan dokumentasi, termasuk `README.md`, `AI_DECLARATION.md`, dan laporan progres pengembangan aplikasi BinaCare.
+
+### B. Peran dan Pekerjaan Pengembang
+
+Pengembang bertanggung jawab terhadap proses pengembangan dan hasil akhir aplikasi BinaCare, meliputi:
+
+1. Menentukan kebutuhan dan tujuan pengembangan aplikasi.
+2. Membuat dan mengelola proyek Flutter.
+3. Menyesuaikan kode dengan struktur dan kebutuhan proyek.
+4. Mengatur serta memeriksa navigasi ant halaman.
+5. Meninjau saran AI sebelum menerapkannya pada aplikasi.
+6. Menjalankan aplikasi untuk memeriksa hasil implementasi.
+7. Memperbaiki bagian yang tidak sesuai dengan kebutuhan aplikasi.
+8. Mengelola kode sumber menggunakan Git dan GitHub.
+9. Memastikan dokumentasi sesuai dengan kondisi aplikasi yang sebenarnya.
+
+AI berperan sebagai alat bantu, sedangkan pengembang bertanggung jawab untuk memahami, meninjau, dan memeriksa hasil implementasi. Pembagian tersebut tidak berarti seluruh kode pada modul yang disebutkan dibuat oleh AI.
+
+## 4. Studi Kasus Prompting
+
+### Studi Kasus 1 — Penyempurnaan Tampilan Login dan Register
+
+**A. Permasalahan**
+
+Pada proses pengembangan aplikasi BinaCare, tampilan halaman Login dan Register perlu disempurnakan agar lebih ringkas dan rapi. Perubahan tampilan perlu tetap mempertahankan fungsi utama, seperti pilihan peran pengguna, validasi formulir, dan navigasi ant halaman.
+
+**B. Contoh Prompt**
+
+> Bantu sesuaikan tampilan halaman Login dan Register pada aplikasi BinaCare menggunakan Flutter agar lebih ringkas dan rapi. Pertahankan fungsi utama, validasi formulir, pilihan peran Siswa dan Guru BK, serta navigasi menuju halaman yang sesuai.
+
+**C. Hasil Awal dari AI**
+
+AI memberikan saran penyesuaian kode Flutter, terutama pada ukuran komponen, jarak antarelemen, susunan formulir, dan tampilan tombol agar halaman terlihat lebih ringkas.
+
+**D. Penyesuaian oleh Pengembang**
+
+Saran yang diberikan disesuaikan dengan struktur halaman Login dan Register yang digunakan dalam proyek BinaCare. Bagian tampilan dirapikan dengan tetap memperhatikan fungsi formulir, pilihan peran, validasi input, dan navigasi. Fungsi yang tersedia perlu diperiksa kembali setelah perubahan diterapkan.
+
+**E. Hasil Pengembangan**
+
+Halaman Login dan Register telah disesuaikan menjadi lebih ringkas. Penyempurnaan dilakukan pada tampilan antarmuka tanpa mengubah tujuan utama halaman tersebut.
+
+### Studi Kasus 2 — Perbaikan Kesalahan Penggunaan `const` pada Dashboard Guru BK
+
+**A. Permasalahan**
+
+Ketika mengembangkan Dashboard Guru BK, ditemukan kesalahan penggunaan `const` pada teks yang memuat variabel dinamis. Kesalahan tersebut perlu diperbaiki agar halaman dapat dijalankan kembali.
+
+**B. Contoh Prompt**
+
+> Saya sedang mengembangkan Dashboard Guru BK menggunakan Flutter. Terdapat kesalahan penggunaan `const` pada teks yang memuat variabel dinamis. Bantu jelaskan penyebab kesalahan tersebut dan berikan solusi perbaikannya.
+
+**C. Hasil Awal dari AI**
+
+AI menjelaskan bahwa `const` digunakan untuk objek yang nilainya dapat ditentukan secara konstan. Pada widget yang bergantung pada nilai dinamis, penggunaan `const` perlu disesuaikan dengan kondisi kode.
+
+**D. Penyesuaian oleh Pengembang**
+
+Perbaikan dilakukan dengan menghapus `const` pada bagian kode yang memuat variabel dinamis. Setelah perubahan diterapkan, Dashboard Guru BK dijalankan kembali untuk memeriksa apakah kesalahan tersebut sudah teratasi.
+
+**E. Hasil Pengembangan**
+
+Kesalahan penggunaan `const` berhasil diperbaiki sehingga Dashboard Guru BK dapat dijalankan kembali.
+
+**Catatan studi kasus:** Prompt di atas dirumuskan kembali untuk dokumentasi berdasarkan pekerjaan yang pernah dibahas selama pengembangan BinaCare, bukan kutipan persis dari riwayat percakapan. Hasil awal AI dan penyesuaian yang dicantumkan harus sesuai dengan proses yang benar-benar dilakukan. Jika diperlukan, bukti dapat dilengkapi dengan potongan kode sebelum dan sesudah perubahan.
+
+## 5. Batasan Penggunaan AI
+
+Penggunaan AI dalam pengembangan BinaCare memiliki beberapa batasan:
+
+1. Saran AI tidak selalu dapat langsung diterapkan dan perlu disesuaikan dengan struktur proyek.
+2. Kode yang diperoleh melalui bantuan AI perlu diperiksa dan diuji.
+3. AI digunakan sebagai alat bantu pembelajaran, bukan pengganti pemahaman pengembang terhadap kode.
+4. Beberapa fitur masih menggunakan data sementara sehingga perubahan data belum tersimpan secara permanen.
+5. Firebase Authentication dan Cloud Firestore belum terintegrasi pada tahap pengembangan yang didokumentasikan.
+6. Fitur lanjutan, seperti notifikasi, penyimpanan permanen hasil konseling, dan tindak lanjut konseling, masih memerlukan pengembangan lebih lanjut.
+
+## 6. Pernyataan Transparansi
+
+Dokumen ini dibuat sebagai bentuk transparansi penggunaan AI selama proses pengembangan aplikasi BinaCare. ChatGPT digunakan untuk membantu memahami kode, mencari alternatif penyelesaian masalah, menyempurnakan tampilan antarmuka, mengembangkan alur fitur, dan menyusun dokumentasi.
+
+Pengembang bertanggung jawab untuk meninjau saran AI, menyesuaikan implementasi dengan kebutuhan aplikasi, memahami kode yang digunakan, serta memeriksa hasil pengembangan.
+
+Dokumen ini disusun untuk menjelaskan bentuk bantuan AI yang digunakan dan tanggung jawab pengembang terhadap proses implementasi, pengujian, serta hasil akhir proyek BinaCare.
