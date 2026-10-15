@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'register_page.dart';
 import 'student_dashboard.dart';
@@ -15,18 +16,14 @@ class _LoginPageState extends State<LoginPage> {
 
   final TextEditingController _emailController =
       TextEditingController();
-
   final TextEditingController _nisController =
       TextEditingController();
-
   final TextEditingController _nipController =
       TextEditingController();
-
   final TextEditingController _passwordController =
       TextEditingController();
 
   String selectedRole = 'Siswa';
-
   bool _obscurePassword = true;
 
   @override
@@ -44,9 +41,6 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
-    // LOGIN SEMENTARA
-    // Belum memeriksa data melalui database.
 
     if (selectedRole == 'Siswa') {
       Navigator.pushReplacement(
@@ -86,63 +80,64 @@ class _LoginPageState extends State<LoginPage> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 30,
+              horizontal: 16,
+              vertical: 8,
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(
-                maxWidth: 430,
+                maxWidth: 300,
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // ================= LOGO =================
 
                   Container(
-                    width: 76,
-                    height: 76,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: const Color(0xFFEAF3FA),
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(13),
                     ),
                     child: const Icon(
                       Icons.support_agent_rounded,
                       color: Color(0xFF2F6FA3),
-                      size: 42,
+                      size: 23,
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 5),
 
                   const Text(
                     'BinaCare',
                     style: TextStyle(
-                      fontSize: 30,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF2F6FA3),
                     ),
                   ),
 
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 2),
 
                   const Text(
                     'Layanan Konseling Siswa',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 10,
                       color: Color(0xFF6B7280),
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 10),
 
                   // ================= CARD LOGIN =================
 
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(22),
+                    padding: const EdgeInsets.all(11),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: const Color(0xFFE5E7EB),
                       ),
@@ -150,42 +145,34 @@ class _LoginPageState extends State<LoginPage> {
                     child: Form(
                       key: _formKey,
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Masuk',
                             style: TextStyle(
-                              fontSize: 23,
+                              fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF202124),
                             ),
                           ),
 
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 2),
 
                           const Text(
                             'Masuk untuk menggunakan BinaCare.',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 10,
                               color: Color(0xFF6B7280),
                             ),
                           ),
 
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 9),
 
                           // ================= ROLE =================
 
-                          const Text(
-                            'Masuk sebagai',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF202124),
-                            ),
-                          ),
+                          _fieldLabel('Masuk sebagai'),
 
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 4),
 
                           Row(
                             children: [
@@ -202,9 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                                   },
                                 ),
                               ),
-
-                              const SizedBox(width: 10),
-
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: _roleButton(
                                   title: 'Guru BK',
@@ -221,18 +206,19 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 8),
 
                           // ================= EMAIL =================
 
                           _fieldLabel('Email'),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 3),
 
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
+                            style: const TextStyle(fontSize: 12),
                             decoration: _inputDecoration(
                               hint: 'Masukkan email',
                               icon: Icons.email_outlined,
@@ -254,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
 
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 7),
 
                           // ================= NIS / NIP =================
 
@@ -262,7 +248,7 @@ class _LoginPageState extends State<LoginPage> {
                             selectedRole == 'Siswa' ? 'NIS' : 'NIP',
                           ),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 3),
 
                           TextFormField(
                             controller: selectedRole == 'Siswa'
@@ -270,6 +256,7 @@ class _LoginPageState extends State<LoginPage> {
                                 : _nipController,
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.next,
+                            style: const TextStyle(fontSize: 12),
                             decoration: _inputDecoration(
                               hint: selectedRole == 'Siswa'
                                   ? 'Masukkan NIS'
@@ -288,23 +275,26 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
 
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 7),
 
                           // ================= PASSWORD =================
 
                           _fieldLabel('Password'),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 3),
 
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _login(),
+                            style: const TextStyle(fontSize: 12),
                             decoration: _inputDecoration(
                               hint: 'Masukkan password',
                               icon: Icons.lock_outline_rounded,
                               suffixIcon: IconButton(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
                                 onPressed: () {
                                   setState(() {
                                     _obscurePassword =
@@ -316,6 +306,7 @@ class _LoginPageState extends State<LoginPage> {
                                       ? Icons.visibility_outlined
                                       : Icons.visibility_off_outlined,
                                   color: const Color(0xFF6B7280),
+                                  size: 17,
                                 ),
                               ),
                             ),
@@ -332,13 +323,13 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 10),
 
                           // ================= LOGIN BUTTON =================
 
                           SizedBox(
                             width: double.infinity,
-                            height: 50,
+                            height: 34,
                             child: ElevatedButton(
                               onPressed: _login,
                               style: ElevatedButton.styleFrom(
@@ -346,22 +337,24 @@ class _LoginPageState extends State<LoginPage> {
                                     const Color(0xFF2F6FA3),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
                                 shape: RoundedRectangleBorder(
                                   borderRadius:
-                                      BorderRadius.circular(12),
+                                      BorderRadius.circular(8),
                                 ),
                               ),
                               child: const Text(
                                 'Masuk',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 6),
 
                           // ================= REGISTER =================
 
@@ -372,19 +365,27 @@ class _LoginPageState extends State<LoginPage> {
                                 child: Text(
                                   'Belum punya akun?',
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 10,
                                     color: Color(0xFF6B7280),
                                   ),
                                 ),
                               ),
-
                               TextButton(
                                 onPressed: _openRegister,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 3,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                                 child: const Text(
                                   'Daftar',
                                   style: TextStyle(
                                     color: Color(0xFF2F6FA3),
-                                    fontSize: 13,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -396,12 +397,13 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 6),
 
                   const Text(
                     'BinaCare • Layanan Konseling Siswa',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 9,
                       color: Color(0xFF9CA3AF),
                     ),
                   ),
@@ -420,7 +422,7 @@ class _LoginPageState extends State<LoginPage> {
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: FontWeight.w600,
         color: Color(0xFF202124),
       ),
@@ -436,28 +438,39 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     return InputDecoration(
       hintText: hint,
+      hintStyle: const TextStyle(fontSize: 11),
       prefixIcon: Icon(
         icon,
         color: const Color(0xFF4B5563),
+        size: 16,
       ),
       suffixIcon: suffixIcon,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 7,
+      ),
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: 30,
+        minHeight: 30,
+      ),
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(
           color: Color(0xFFE5E7EB),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(
           color: Color(0xFF2F6FA3),
-          width: 1.5,
+          width: 1.2,
         ),
       ),
     );
@@ -475,19 +488,19 @@ class _LoginPageState extends State<LoginPage> {
       color: selected
           ? const Color(0xFFEAF3FA)
           : const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          height: 58,
+          height: 36,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: selected
                   ? const Color(0xFF2F6FA3)
                   : const Color(0xFFE5E7EB),
-              width: selected ? 1.5 : 1,
+              width: selected ? 1.2 : 1,
             ),
           ),
           child: Row(
@@ -495,24 +508,25 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               Icon(
                 icon,
-                size: 21,
+                size: 15,
                 color: selected
                     ? const Color(0xFF2F6FA3)
                     : const Color(0xFF6B7280),
               ),
-
-              const SizedBox(width: 7),
-
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: selected
-                      ? const Color(0xFF2F6FA3)
-                      : const Color(0xFF4B5563),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: selected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: selected
+                        ? const Color(0xFF2F6FA3)
+                        : const Color(0xFF4B5563),
+                  ),
                 ),
               ),
             ],
