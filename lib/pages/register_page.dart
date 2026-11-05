@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
+  bool isLoading = false;
 
   final namaController = TextEditingController();
   final nisController = TextEditingController();
@@ -36,7 +39,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // ================= REGISTER =================
 
-  void register() {
+  Future<void> register() async {
+    if (isLoading) return;
+
     if (namaController.text.trim().isEmpty ||
         emailController.text.trim().isEmpty ||
         passwordController.text.isEmpty ||
@@ -59,6 +64,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     final email = emailController.text.trim();
+    final password = passwordController.text;
 
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
         .hasMatch(email)) {
@@ -66,44 +72,131 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    if (passwordController.text.length < 6) {
+    if (password.length < 6) {
       _showMessage('Password minimal 6 karakter.');
       return;
     }
 
-    if (passwordController.text !=
-        confirmPasswordController.text) {
+    if (password != confirmPasswordController.text) {
       _showMessage('Konfirmasi password tidak sesuai.');
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text(
-            'Validasi Berhasil',
-            style: TextStyle(fontSize: 18),
-          ),
-          content: const Text(
-            'Data pendaftaran sudah lengkap dan valid. '
-            'Akun belum tersimpan karena database belum '
-            'terhubung. Silakan lanjutkan pengembangan '
-            'integrasi login dan database.',
-            style: TextStyle(fontSize: 13),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
+    setState(() {
+      isLoading = true;
+    });
+
+    User? newUser;
+
+    try {
+      // 1. Membuat akun Firebase Authentication
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      newUser = credential.user;
+
+      if (newUser == null) {
+        throw Exception('Akun gagal dibuat.');
+      }
+
+      // 2. Menyiapkan data pengguna
+      final Map<String, dynamic> userData = {
+        'uid': newUser.uid,
+        'nama': namaController.text.trim(),
+        'email': email,
+        'role': selectedRole,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      if (selectedRole == 'Siswa') {
+        userData['nis'] = nisController.text.trim();
+        userData['kelas'] = kelasController.text.trim();
+      } else {
+        userData['nip'] = nipController.text.trim();
+      }
+
+      // 3. Menyimpan data ke Cloud Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(newUser.uid)
+          .set(userData);
+
+      // 4. Logout agar pengguna masuk melalui halaman Login
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      // 5. Menampilkan pesan berhasil
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text(
+              'Pendaftaran Berhasil',
+              style: TextStyle(fontSize: 18),
             ),
-          ],
+            content: const Text(
+              'Akun BinaCare berhasil dibuat. '
+              'Silakan masuk menggunakan email dan '
+              'password yang telah didaftarkan.',
+              style: TextStyle(fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pop(context);
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    } on FirebaseAuthException catch (e) {
+      String message;
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'Email sudah terdaftar.';
+          break;
+        case 'invalid-email':
+          message = 'Format email tidak valid.';
+          break;
+        case 'weak-password':
+          message = 'Password terlalu lemah.';
+          break;
+        case 'operation-not-allowed':
+          message = 'Pendaftaran email/password belum diaktifkan.';
+          break;
+        default:
+          message = e.message ?? 'Pendaftaran gagal.';
+      }
+
+      if (mounted) {
+        _showMessage(message);
+      }
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        _showMessage(
+          'Akun mungkin sudah dibuat, tetapi data profil gagal disimpan: ${e.message}',
         );
-      },
-    );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMessage('Terjadi kesalahan: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   void _showMessage(String message) {
@@ -342,23 +435,34 @@ class _RegisterPageState extends State<RegisterPage> {
                       width: double.infinity,
                       height: 36,
                       child: ElevatedButton(
-                        onPressed: register,
+                        onPressed: isLoading ? null : register,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2F6FA3),
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              const Color(0xFF2F6FA3),
                           elevation: 0,
                           padding: EdgeInsets.zero,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Daftar',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Daftar',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
 

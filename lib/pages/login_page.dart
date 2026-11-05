@@ -1,5 +1,8 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'register_page.dart';
 import 'student_dashboard.dart';
 import 'guru_dashboard.dart';
@@ -25,6 +28,7 @@ class _LoginPageState extends State<LoginPage> {
 
   String selectedRole = 'Siswa';
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -35,27 +39,150 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // ================= LOGIN =================
+  // ================= PESAN =================
 
-  void _login() {
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // ================= LOGIN FIREBASE =================
+
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    if (selectedRole == 'Siswa') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const StudentDashboard(),
-        ),
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final identifier = selectedRole == 'Siswa'
+          ? _nisController.text.trim()
+          : _nipController.text.trim();
+
+      // 1. Memeriksa email dan password ke Firebase Authentication.
+      final credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const GuruDashboard(),
-        ),
+
+      final user = credential.user;
+
+      if (user == null) {
+        throw Exception('Akun tidak ditemukan.');
+      }
+
+      // 2. Mengambil data pengguna dari Firestore.
+      final userDocument = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDocument.exists) {
+        await FirebaseAuth.instance.signOut();
+        _showMessage(
+          'Data profil belum ditemukan. Silakan hubungi administrator.',
+        );
+        return;
+      }
+
+      final userData = userDocument.data()!;
+
+      final savedRole = userData['role']?.toString();
+      final savedIdentifier = selectedRole == 'Siswa'
+          ? userData['nis']?.toString()
+          : userData['nip']?.toString();
+
+      // 3. Memeriksa kesesuaian role.
+      if (savedRole != selectedRole) {
+        await FirebaseAuth.instance.signOut();
+        _showMessage(
+          'Role tidak sesuai dengan akun yang terdaftar.',
+        );
+        return;
+      }
+
+      // 4. Memeriksa kesesuaian NIS atau NIP.
+      if (savedIdentifier == null ||
+          savedIdentifier.trim() != identifier) {
+        await FirebaseAuth.instance.signOut();
+        _showMessage(
+          selectedRole == 'Siswa'
+              ? 'NIS tidak sesuai dengan akun.'
+              : 'NIP tidak sesuai dengan akun.',
+        );
+        return;
+      }
+
+      // 5. Masuk ke Dashboard sesuai role.
+      if (!mounted) return;
+
+      if (selectedRole == 'Siswa') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const StudentDashboard(),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const GuruDashboard(),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+
+      switch (e.code) {
+        case 'invalid-credential':
+        case 'wrong-password':
+        case 'user-not-found':
+          message = 'Email atau password salah.';
+          break;
+        case 'invalid-email':
+          message = 'Format email tidak valid.';
+          break;
+        case 'user-disabled':
+          message = 'Akun ini telah dinonaktifkan.';
+          break;
+        case 'too-many-requests':
+          message = 'Terlalu banyak percobaan. Coba lagi nanti.';
+          break;
+        case 'network-request-failed':
+          message = 'Periksa koneksi internet kamu.';
+          break;
+        default:
+          message = 'Login gagal: ${e.message ?? e.code}';
+      }
+
+      _showMessage(message);
+    } on FirebaseException catch (e) {
+      _showMessage(
+        'Gagal mengambil data pengguna: ${e.message ?? e.code}',
       );
+    } catch (e) {
+      _showMessage('Terjadi kesalahan: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -331,11 +458,13 @@ class _LoginPageState extends State<LoginPage> {
                             width: double.infinity,
                             height: 34,
                             child: ElevatedButton(
-                              onPressed: _login,
+                              onPressed: _isLoading ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
                                     const Color(0xFF2F6FA3),
                                 foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    const Color(0xFF8EABC2),
                                 elevation: 0,
                                 padding: EdgeInsets.zero,
                                 minimumSize: Size.zero,
@@ -344,13 +473,22 @@ class _LoginPageState extends State<LoginPage> {
                                       BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 17,
+                                      height: 17,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Masuk',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
 
@@ -371,7 +509,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: _openRegister,
+                                onPressed: _isLoading ? null : _openRegister,
                                 style: TextButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 5,

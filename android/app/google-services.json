@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "73048084537",
+    "project_id": "binacare-694b1",
+    "storage_bucket": "binacare-694b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:73048084537:android:25490d5ca3a87db797fde8",
+        "android_client_info": {
+          "package_name": "com.example.binacare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFIHZNN7o2s3BPQzAtqI6wjCoMpIh9eaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
