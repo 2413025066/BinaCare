@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class JadwalKonselingPage extends StatefulWidget {
   const JadwalKonselingPage({super.key});
@@ -18,58 +20,39 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
 
   String selectedFilter = 'Semua';
 
-  final List<Map<String, String>> jadwalList = [
-    {
-      'topik': 'Kesulitan belajar dan akademik',
-      'guru': 'Ibu Siti Rahma, S.Pd.',
-      'tanggal': '15 Oktober 2026',
-      'waktu': '09:00 - 09:30',
-      'tempat': 'Ruang BK',
-      'status': 'Dikonfirmasi',
-    },
-    {
-      'topik': 'Konsultasi pemilihan jurusan',
-      'guru': 'Ibu Siti Rahma, S.Pd.',
-      'tanggal': '20 Oktober 2026',
-      'waktu': '10:00 - 10:30',
-      'tempat': 'Ruang BK',
-      'status': 'Dikonfirmasi',
-    },
-    {
-      'topik': 'Konseling pengembangan diri',
-      'guru': 'Bapak Andi Pratama, S.Pd.',
-      'tanggal': '5 Oktober 2026',
-      'waktu': '13:00 - 13:30',
-      'tempat': 'Ruang BK',
-      'status': 'Selesai',
-    },
-  ];
+  String _formatTanggal(dynamic value) {
+    if (value == null) return '-';
 
-  List<Map<String, String>> get filteredJadwal {
-    if (selectedFilter == 'Selesai') {
-      return jadwalList
-          .where((item) => item['status'] == 'Selesai')
-          .toList();
+    DateTime date;
+
+    if (value is Timestamp) {
+      date = value.toDate();
+    } else if (value is DateTime) {
+      date = value;
+    } else {
+      return '-';
     }
 
-    return jadwalList;
-  }
+    const bulan = [
+      'Januari', 'Februari', 'Maret', 'April',
+      'Mei', 'Juni', 'Juli', 'Agustus',
+      'September', 'Oktober', 'November', 'Desember'
+    ];
 
-  int get totalSelesai {
-    return jadwalList
-        .where((item) => item['status'] == 'Selesai')
-        .length;
-  }
-
-  int get totalDikonfirmasi {
-    return jadwalList
-        .where((item) => item['status'] == 'Dikonfirmasi')
-        .length;
+    return '${date.day} ${bulan[date.month - 1]} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final jadwal = filteredJadwal;
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Silakan login terlebih dahulu.'),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -88,48 +71,132 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
         iconTheme: const IconThemeData(color: textDark),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(),
-              const SizedBox(height: 20),
-
-              _summaryCard(),
-              const SizedBox(height: 25),
-
-              _sectionTitle(
-                'Daftar Jadwal',
-                'Lihat informasi sesi konselingmu',
-                Icons.event_note_rounded,
-              ),
-              const SizedBox(height: 15),
-
-              _filterChips(),
-              const SizedBox(height: 16),
-
-              if (jadwal.isEmpty)
-                _emptyState()
-              else
-                ...jadwal.map(_buildJadwalCard),
-
-              const SizedBox(height: 12),
-              _informationCard(),
-              const SizedBox(height: 20),
-
-              const Center(
-                child: Text(
-                  'BinaCare • Teman untuk tumbuh dan berkembang',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('pengajuan_konseling')
+              .where('siswaId', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Gagal mengambil jadwal dari Firestore. '
+                    'Periksa koneksi dan aturan database.',
+                    textAlign: TextAlign.center,
                   ),
                 ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: primaryColor,
+                ),
+              );
+            }
+
+            final semuaData = snapshot.data?.docs ?? [];
+
+            // Jadwal hanya ditampilkan jika pengajuan diterima
+            // atau sudah selesai.
+            final jadwalList = semuaData
+                .map((doc) => doc.data())
+                .where((data) {
+                  final status = (data['status'] ?? '')
+                      .toString()
+                      .toLowerCase();
+
+                  return status == 'diterima' ||
+                      status == 'dikonfirmasi' ||
+                      status == 'selesai';
+                })
+                .toList();
+
+            jadwalList.sort((a, b) {
+              final aDate = a['tanggalKonseling'];
+              final bDate = b['tanggalKonseling'];
+
+              final dateA = aDate is Timestamp
+                  ? aDate.toDate()
+                  : DateTime(2000);
+
+              final dateB = bDate is Timestamp
+                  ? bDate.toDate()
+                  : DateTime(2000);
+
+              return dateA.compareTo(dateB);
+            });
+
+            final totalDikonfirmasi = jadwalList.where((data) {
+              final status = (data['status'] ?? '')
+                  .toString()
+                  .toLowerCase();
+
+              return status == 'diterima' ||
+                  status == 'dikonfirmasi';
+            }).length;
+
+            final totalSelesai = jadwalList.where((data) {
+              return (data['status'] ?? '')
+                      .toString()
+                      .toLowerCase() ==
+                  'selesai';
+            }).length;
+
+            final jadwalTampil = selectedFilter == 'Selesai'
+                ? jadwalList.where((data) {
+                    return (data['status'] ?? '')
+                            .toString()
+                            .toLowerCase() ==
+                        'selesai';
+                  }).toList()
+                : jadwalList;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  const SizedBox(height: 20),
+                  _summaryCard(
+                    total: jadwalList.length,
+                    dikonfirmasi: totalDikonfirmasi,
+                    selesai: totalSelesai,
+                  ),
+                  const SizedBox(height: 25),
+                  _sectionTitle(
+                    'Daftar Jadwal',
+                    'Lihat informasi sesi konselingmu',
+                    Icons.event_note_rounded,
+                  ),
+                  const SizedBox(height: 15),
+                  _filterChips(),
+                  const SizedBox(height: 16),
+                  if (jadwalTampil.isEmpty)
+                    _emptyState()
+                  else
+                    ...jadwalTampil.map(_buildJadwalCard),
+                  const SizedBox(height: 12),
+                  _informationCard(),
+                  const SizedBox(height: 20),
+                  const Center(
+                    child: Text(
+                      'BinaCare • Teman untuk tumbuh dan berkembang',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -200,7 +267,11 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
     );
   }
 
-  Widget _summaryCard() {
+  Widget _summaryCard({
+    required int total,
+    required int dikonfirmasi,
+    required int selesai,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -234,7 +305,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
                 child: _summaryItem(
                   icon: Icons.calendar_month_rounded,
                   label: 'Total Jadwal',
-                  value: '${jadwalList.length}',
+                  value: '$total',
                   color: primaryColor,
                   background: const Color(0xFFEAF3FA),
                 ),
@@ -244,7 +315,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
                 child: _summaryItem(
                   icon: Icons.event_available_rounded,
                   label: 'Dikonfirmasi',
-                  value: '$totalDikonfirmasi',
+                  value: '$dikonfirmasi',
                   color: const Color(0xFF2876B5),
                   background: const Color(0xFFEAF3FA),
                 ),
@@ -254,7 +325,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
                 child: _summaryItem(
                   icon: Icons.task_alt_rounded,
                   label: 'Selesai',
-                  value: '$totalSelesai',
+                  value: '$selesai',
                   color: const Color(0xFF258653),
                   background: const Color(0xFFE8F5EC),
                 ),
@@ -393,8 +464,9 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
     );
   }
 
-  Widget _buildJadwalCard(Map<String, String> item) {
-    final selesai = item['status'] == 'Selesai';
+  Widget _buildJadwalCard(Map<String, dynamic> item) {
+    final status = (item['status'] ?? '').toString();
+    final selesai = status.toLowerCase() == 'selesai';
 
     final statusColor = selesai
         ? const Color(0xFF258653)
@@ -403,6 +475,11 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
     final statusBackground = selesai
         ? const Color(0xFFE8F5EC)
         : const Color(0xFFEAF3FA);
+
+    final tanggal = _formatTanggal(item['tanggalKonseling']);
+    final jam = item['jamKonseling']?.toString() ?? '-';
+    final guru = item['guruBk']?.toString() ?? '-';
+    final kategori = item['kategori']?.toString() ?? '-';
 
     return Container(
       width: double.infinity,
@@ -447,7 +524,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['topik']!,
+                      'Konseling $kategori',
                       style: const TextStyle(
                         fontSize: 15,
                         height: 1.4,
@@ -466,7 +543,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        item['status']!,
+                        selesai ? 'Selesai' : 'Dikonfirmasi',
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 11,
@@ -485,28 +562,16 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
             color: Color(0xFFEEF1F5),
           ),
           const SizedBox(height: 17),
-          _infoRow(
-            Icons.person_outline_rounded,
-            'Guru BK',
-            item['guru']!,
-          ),
+          _infoRow(Icons.person_outline_rounded, 'Guru BK', guru),
           const SizedBox(height: 15),
-          _infoRow(
-            Icons.calendar_month_outlined,
-            'Tanggal',
-            item['tanggal']!,
-          ),
+          _infoRow(Icons.calendar_month_outlined, 'Tanggal', tanggal),
           const SizedBox(height: 15),
-          _infoRow(
-            Icons.access_time_rounded,
-            'Waktu',
-            item['waktu']!,
-          ),
+          _infoRow(Icons.access_time_rounded, 'Waktu', jam),
           const SizedBox(height: 15),
           _infoRow(
             Icons.location_on_outlined,
             'Tempat',
-            item['tempat']!,
+            item['tempat']?.toString() ?? 'Ruang BK',
           ),
         ],
       ),
@@ -528,11 +593,7 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
             color: const Color(0xFFF3F6F9),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: primaryColor,
-          ),
+          child: Icon(icon, size: 18, color: primaryColor),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -597,8 +658,8 @@ class _JadwalKonselingPageState extends State<JadwalKonselingPage> {
           ),
           SizedBox(height: 7),
           Text(
-            'Jadwal konseling yang sesuai dengan filter '
-            'ini akan ditampilkan di sini.',
+            'Jadwal konseling akan muncul di sini '
+            'setelah pengajuanmu diterima oleh Guru BK.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,

@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RiwayatKonselingPage extends StatelessWidget {
   const RiwayatKonselingPage({super.key});
@@ -11,38 +13,75 @@ class RiwayatKonselingPage extends StatelessWidget {
   static const Color textMuted = Color(0xFF6B7280);
   static const Color borderColor = Color(0xFFE5EAF1);
 
-  static const List<Map<String, String>> history = [
-    {
-      'category': 'Konseling Akademik',
-      'teacher': 'Ibu Siti Rahma, S.Pd.',
-      'date': '15 Oktober 2026',
-      'time': '09:00 - 09:30',
-      'status': 'Dikonfirmasi',
-    },
-    {
-      'category': 'Konseling Pertemanan',
-      'teacher': 'Bapak Andi Wijaya, S.Pd.',
-      'date': '5 Oktober 2026',
-      'time': '10:00 - 10:30',
-      'status': 'Selesai',
-    },
-    {
-      'category': 'Konseling Pribadi',
-      'teacher': 'Ibu Rina Maharani, S.Psi.',
-      'date': '28 September 2026',
-      'time': '13:00 - 13:30',
-      'status': 'Selesai',
-    },
-  ];
+  String _formatTanggal(DateTime date) {
+    const bulan = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
 
-  int get totalSelesai =>
-      history.where((item) => item['status'] == 'Selesai').length;
+    return '${date.day} ${bulan[date.month - 1]} ${date.year}';
+  }
 
-  int get totalDikonfirmasi =>
-      history.where((item) => item['status'] == 'Dikonfirmasi').length;
+  List<Map<String, String>> _ambilRiwayat(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    final hasil = <Map<String, String>>[];
+
+    for (final doc in docs) {
+      final data = doc.data();
+      final status = (data['status'] ?? '').toString();
+
+      if (!['Diterima', 'Dikonfirmasi', 'Selesai'].contains(status)) {
+        continue;
+      }
+
+      final tanggal = data['tanggalKonseling'];
+      DateTime? tanggalDate;
+
+      if (tanggal is Timestamp) {
+        tanggalDate = tanggal.toDate();
+      }
+
+      hasil.add({
+        'category': 'Konseling ${data['kategori'] ?? '-'}',
+        'teacher': (data['guruBk'] ?? '-').toString(),
+        'date': tanggalDate == null ? '-' : _formatTanggal(tanggalDate),
+        'time': (data['jamKonseling'] ?? '-').toString(),
+        'status': status,
+        'story': (data['cerita'] ?? '-').toString(),
+        'urgency': (data['urgensi'] ?? '-').toString(),
+      });
+    }
+
+    return hasil;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: background,
+        appBar: AppBar(
+          title: const Text('Riwayat Konseling'),
+        ),
+        body: const Center(
+          child: Text('Silakan login terlebih dahulu.'),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
@@ -59,27 +98,94 @@ class RiwayatKonselingPage extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildSummary(),
-            const SizedBox(height: 25),
-            _buildSectionHeader(),
-            const SizedBox(height: 14),
-            ...history.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 13),
-                child: _historyCard(context, item),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('pengajuan_konseling')
+            .where('siswaId', isEqualTo: user.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Gagal mengambil riwayat konseling. Silakan coba lagi.',
+                  textAlign: TextAlign.center,
+                ),
               ),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: primary),
+            );
+          }
+
+          final docs = snapshot.data?.docs.toList() ?? [];
+
+          // Urutkan berdasarkan Timestamp tanggal konseling terbaru.
+          docs.sort((a, b) {
+            final tanggalA = a.data()['tanggalKonseling'];
+            final tanggalB = b.data()['tanggalKonseling'];
+
+            final dateA = tanggalA is Timestamp
+                ? tanggalA.toDate()
+                : DateTime(2000);
+
+            final dateB = tanggalB is Timestamp
+                ? tanggalB.toDate()
+                : DateTime(2000);
+
+            return dateB.compareTo(dateA);
+          });
+
+          final history = _ambilRiwayat(docs);
+
+          final totalSelesai = history
+              .where((item) => item['status'] == 'Selesai')
+              .length;
+
+          final totalDikonfirmasi = history
+              .where(
+                (item) =>
+                    item['status'] == 'Dikonfirmasi' ||
+                    item['status'] == 'Diterima',
+              )
+              .length;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildSummary(
+                  history.length,
+                  totalSelesai,
+                  totalDikonfirmasi,
+                ),
+                const SizedBox(height: 25),
+                _buildSectionHeader(),
+                const SizedBox(height: 14),
+
+                if (history.isEmpty)
+                  _buildEmptyHistory()
+                else
+                  ...history.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 13),
+                      child: _historyCard(context, item),
+                    ),
+                  ),
+
+                const SizedBox(height: 8),
+                _buildPrivacyCard(),
+              ],
             ),
-            const SizedBox(height: 8),
-            _buildPrivacyCard(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -148,14 +254,18 @@ class RiwayatKonselingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummary() {
+  Widget _buildSummary(
+    int totalRiwayat,
+    int totalSelesai,
+    int totalDikonfirmasi,
+  ) {
     return Row(
       children: [
         Expanded(
           child: _summaryCard(
             icon: Icons.event_note_rounded,
             label: 'Total Riwayat',
-            value: '${history.length}',
+            value: '$totalRiwayat',
             color: primary,
             backgroundColor: const Color(0xFFEAF3FA),
           ),
@@ -257,15 +367,58 @@ class RiwayatKonselingPage extends StatelessWidget {
     );
   }
 
+  Widget _buildEmptyHistory() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.history_rounded,
+            color: primary,
+            size: 48,
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Belum Ada Riwayat Konseling',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textDark,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 7),
+          Text(
+            'Riwayat akan muncul setelah pengajuan konseling diterima atau selesai.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _historyCard(
     BuildContext context,
     Map<String, String> item,
   ) {
     final status = item['status'] ?? '-';
     final isDone = status == 'Selesai';
+
     final statusColor = isDone
         ? const Color(0xFF238653)
         : const Color(0xFFB7791F);
+
     final statusBackground = isDone
         ? const Color(0xFFE8F6EE)
         : const Color(0xFFFFF4D9);
@@ -464,9 +617,11 @@ class RiwayatKonselingPage extends StatelessWidget {
   ) {
     final status = item['status'] ?? '-';
     final isDone = status == 'Selesai';
+
     final statusColor = isDone
         ? const Color(0xFF238653)
         : const Color(0xFFB7791F);
+
     final statusBackground = isDone
         ? const Color(0xFFE8F6EE)
         : const Color(0xFFFFF4D9);
@@ -606,6 +761,16 @@ class RiwayatKonselingPage extends StatelessWidget {
                     Icons.access_time_rounded,
                     'Waktu',
                     item['time'] ?? '-',
+                  ),
+                  _detailItem(
+                    Icons.notes_rounded,
+                    'Cerita Konseling',
+                    item['story'] ?? '-',
+                  ),
+                  _detailItem(
+                    Icons.flag_outlined,
+                    'Tingkat Urgensi',
+                    item['urgency'] ?? '-',
                   ),
                   const SizedBox(height: 8),
                   SizedBox(

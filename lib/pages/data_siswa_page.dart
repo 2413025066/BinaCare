@@ -25,8 +25,8 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
       TextEditingController();
 
   String _kataKunci = '';
-  String _filterStatus = 'Semua';
 
+  // Satu siswa hanya ditampilkan satu kali.
   List<Map<String, String>> get _daftarSiswa {
     final Map<String, Map<String, String>> siswaUnik = {};
 
@@ -38,41 +38,52 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
 
       final kunci = '${nama.toLowerCase()}-${kelas.toLowerCase()}';
 
-      if (!siswaUnik.containsKey(kunci)) {
-        siswaUnik[kunci] = Map<String, String>.from(pengajuan);
-      } else {
-        // Simpan pengajuan terbaru yang ditemukan untuk siswa yang sama.
-        // Data di sini tetap berupa data sementara dari daftar pengajuan.
-        siswaUnik[kunci] = Map<String, String>.from(pengajuan);
-      }
+      siswaUnik.putIfAbsent(
+        kunci,
+        () => Map<String, String>.from(pengajuan),
+      );
     }
 
     return siswaUnik.values.toList();
   }
 
-  List<Map<String, String>> get _siswaTersaring {
-    return _daftarSiswa.where((siswa) {
-      final nama = (siswa['nama'] ?? '').toLowerCase();
-      final kelas = (siswa['kelas'] ?? '').toLowerCase();
-      final kata = _kataKunci.toLowerCase().trim();
-      final status = siswa['status'] ?? 'Menunggu';
+  // Mengambil seluruh pengajuan milik siswa yang dipilih.
+  List<Map<String, String>> _pengajuanUntukSiswa(
+    Map<String, String> siswa,
+  ) {
+    final nama = (siswa['nama'] ?? '').trim().toLowerCase();
+    final kelas = (siswa['kelas'] ?? '').trim().toLowerCase();
 
-      final cocokPencarian =
-          nama.contains(kata) || kelas.contains(kata);
-
-      final cocokStatus =
-          _filterStatus == 'Semua' || status == _filterStatus;
-
-      return cocokPencarian && cocokStatus;
+    return widget.daftarPengajuan.where((pengajuan) {
+      return (pengajuan['nama'] ?? '').trim().toLowerCase() == nama &&
+          (pengajuan['kelas'] ?? '').trim().toLowerCase() == kelas;
     }).toList();
   }
 
-  int _jumlahStatus(String status) {
-    if (status == 'Semua') return _daftarSiswa.length;
+  List<Map<String, String>> get _siswaTersaring {
+    final kata = _kataKunci.trim().toLowerCase();
 
-    return _daftarSiswa
-        .where((siswa) => (siswa['status'] ?? 'Menunggu') == status)
-        .length;
+    return _daftarSiswa.where((siswa) {
+      final nama = (siswa['nama'] ?? '').toLowerCase();
+      final kelas = (siswa['kelas'] ?? '').toLowerCase();
+
+      return nama.contains(kata) || kelas.contains(kata);
+    }).toList();
+  }
+
+  String _inisial(String nama) {
+    final bagian = nama
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((kata) => kata.isNotEmpty)
+        .toList();
+
+    if (bagian.isEmpty) return '?';
+    if (bagian.length >= 2) {
+      return '${bagian[0][0]}${bagian[1][0]}'.toUpperCase();
+    }
+
+    return bagian.first[0].toUpperCase();
   }
 
   Color _warnaStatus(String status) {
@@ -108,31 +119,14 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
     }
   }
 
-  String _inisial(String nama) {
-    final namaBersih = nama.trim();
-
-    if (namaBersih.isEmpty) return '?';
-
-    final bagian = namaBersih
-        .split(RegExp(r'\s+'))
-        .where((kata) => kata.isNotEmpty)
-        .toList();
-
-    if (bagian.length >= 2) {
-      return '${bagian[0][0]}${bagian[1][0]}'.toUpperCase();
-    }
-
-    return bagian.first[0].toUpperCase();
-  }
-
   void _lihatDetail(Map<String, String> siswa) {
+    final semuaPengajuan = _pengajuanUntukSiswa(siswa);
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        final status = siswa['status'] ?? 'Menunggu';
-
         return SafeArea(
           child: Container(
             constraints: BoxConstraints(
@@ -145,160 +139,226 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
                 top: Radius.circular(28),
               ),
             ),
-            child: SingleChildScrollView(
+            child: ListView(
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 26),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFDDE4EC),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 23),
-                  const Text(
-                    'Detail Siswa',
-                    style: TextStyle(
-                      color: teks,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(17),
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 5,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF347DB6), biruGelap],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: const Color(0xFFDDE4EC),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.white.withOpacity(0.18),
-                          child: Text(
-                            _inisial(siswa['nama'] ?? ''),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
-                            ),
+                  ),
+                ),
+                const SizedBox(height: 23),
+                const Text(
+                  'Detail Siswa',
+                  style: TextStyle(
+                    color: teks,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Identitas siswa.
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(17),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF347DB6), biruGelap],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor:
+                            Colors.white.withOpacity(0.18),
+                        child: Text(
+                          _inisial(siswa['nama'] ?? ''),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(width: 13),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                siswa['nama'] ?? '-',
+                      ),
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              siswa['nama'] ?? '-',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Kelas ${siswa['kelas'] ?? '-'}',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+                Text(
+                  'Riwayat Pengajuan (${semuaPengajuan.length})',
+                  style: const TextStyle(
+                    color: teks,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                ...semuaPengajuan.asMap().entries.map((entry) {
+                  final nomor = entry.key + 1;
+                  final pengajuan = entry.value;
+                  final status = pengajuan['status'] ?? 'Menunggu';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 13),
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: latar,
+                      borderRadius: BorderRadius.circular(17),
+                      border: Border.all(color: garis),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Pengajuan $nomor',
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
+                                  color: teks,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(height: 5),
-                              Text(
-                                'Kelas ${siswa['kelas'] ?? '-'}',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: 12,
-                                ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 6,
                               ),
-                            ],
-                          ),
+                              decoration: BoxDecoration(
+                                color: _latarStatus(status),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _ikonStatus(status),
+                                    color: _warnaStatus(status),
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    status,
+                                    style: TextStyle(
+                                      color: _warnaStatus(status),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 15),
+                        _detailItem(
+                          Icons.chat_bubble_outline_rounded,
+                          'Keperluan Konseling',
+                          pengajuan['alasan'] ?? '-',
+                        ),
+                        _detailItem(
+                          Icons.calendar_today_outlined,
+                          'Tanggal Pengajuan',
+                          pengajuan['tanggal'] ?? '-',
+                        ),
+                        if (status == 'Diterima') ...[
+                          const Divider(color: garis),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Informasi Jadwal',
+                            style: TextStyle(
+                              color: teks,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 13),
+                          _detailItem(
+                            Icons.calendar_month_rounded,
+                            'Tanggal Konseling',
+                            pengajuan['jadwalTanggal'] ?? '-',
+                          ),
+                          _detailItem(
+                            Icons.access_time_rounded,
+                            'Waktu Konseling',
+                            pengajuan['jadwalWaktu'] ?? '-',
+                          ),
+                          _detailItem(
+                            Icons.location_on_outlined,
+                            'Tempat Konseling',
+                            pengajuan['jadwalTempat'] ?? '-',
+                          ),
+                        ],
+                        if (status == 'Ditolak')
+                          _detailItem(
+                            Icons.comment_outlined,
+                            'Alasan Penolakan',
+                            pengajuan['alasanPenolakan'] ?? '-',
+                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  _detailItem(
-                    Icons.chat_bubble_outline_rounded,
-                    'Keperluan Konseling',
-                    siswa['alasan'] ?? '-',
-                  ),
-                  _detailItem(
-                    Icons.calendar_today_outlined,
-                    'Tanggal Pengajuan',
-                    siswa['tanggal'] ?? '-',
-                  ),
-                  _detailItem(
-                    Icons.info_outline_rounded,
-                    'Status Pengajuan',
-                    status,
-                  ),
-                  if (status == 'Diterima' &&
-                      siswa['jadwalTanggal'] != null) ...[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 3),
-                      child: Divider(color: garis),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Informasi Jadwal',
-                      style: TextStyle(
-                        color: teks,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                  );
+                }),
+
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: biru,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    _detailItem(
-                      Icons.calendar_month_rounded,
-                      'Tanggal Konseling',
-                      siswa['jadwalTanggal'] ?? '-',
-                    ),
-                    _detailItem(
-                      Icons.access_time_rounded,
-                      'Waktu Konseling',
-                      siswa['jadwalWaktu'] ?? '-',
-                    ),
-                    _detailItem(
-                      Icons.location_on_outlined,
-                      'Tempat Konseling',
-                      siswa['jadwalTempat'] ?? '-',
-                    ),
-                  ],
-                  if (status == 'Ditolak' &&
-                      siswa['alasanPenolakan'] != null)
-                    _detailItem(
-                      Icons.comment_outlined,
-                      'Alasan Penolakan',
-                      siswa['alasanPenolakan'] ?? '-',
-                    ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(sheetContext),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: biru,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Tutup Detail',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                    child: const Text(
+                      'Tutup Detail',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -382,109 +442,58 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
         ),
       ),
       body: SafeArea(
-        child: Column(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                children: [
-                  _bannerSiswa(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Ringkasan Siswa',
-                    style: TextStyle(
-                      color: teks,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 13),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _kartuRingkasan(
-                          judul: 'Total Siswa',
-                          jumlah: _jumlahStatus('Semua'),
-                          ikon: Icons.groups_rounded,
-                          warna: biru,
-                          warnaLatar: const Color(0xFFEAF3FA),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _kartuRingkasan(
-                          judul: 'Diterima',
-                          jumlah: _jumlahStatus('Diterima'),
-                          ikon: Icons.check_circle_outline_rounded,
-                          warna: const Color(0xFF218653),
-                          warnaLatar: const Color(0xFFE5F6EC),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _kartuRingkasan(
-                          judul: 'Menunggu',
-                          jumlah: _jumlahStatus('Menunggu'),
-                          ikon: Icons.hourglass_top_rounded,
-                          warna: const Color(0xFFB7791F),
-                          warnaLatar: const Color(0xFFFFF4DB),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 25),
-                  const Text(
-                    'Direktori Siswa',
-                    style: TextStyle(
-                      color: teks,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _kolomPencarian(),
-                  const SizedBox(height: 14),
-                  _filterSiswa(),
-                  const SizedBox(height: 17),
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Daftar siswa konseling',
-                          style: TextStyle(
-                            color: teksSekunder,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEAF3FA),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${siswa.length} siswa',
-                          style: const TextStyle(
-                            color: biru,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 13),
-                  if (siswa.isEmpty)
-                    _tampilanKosong()
-                  else
-                    ...siswa.map(_kartuSiswa),
-                ],
+            _bannerSiswa(),
+            const SizedBox(height: 24),
+            const Text(
+              'Direktori Siswa',
+              style: TextStyle(
+                color: teks,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 12),
+            _kolomPencarian(),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Daftar siswa yang pernah mengajukan konseling',
+                    style: TextStyle(
+                      color: teksSekunder,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF3FA),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${siswa.length} siswa',
+                    style: const TextStyle(
+                      color: biru,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 13),
+            if (siswa.isEmpty)
+              _tampilanKosong()
+            else
+              ...siswa.map(_kartuSiswa),
           ],
         ),
       ),
@@ -572,8 +581,8 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Lihat informasi siswa dan pantau '
-                      'status pengajuan konseling.',
+                      'Lihat informasi siswa yang pernah '
+                      'mengajukan layanan konseling.',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.88),
                         fontSize: 12,
@@ -598,67 +607,6 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _kartuRingkasan({
-    required String judul,
-    required int jumlah,
-    required IconData ikon,
-    required Color warna,
-    required Color warnaLatar,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 14,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: garis),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF253858).withOpacity(0.025),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: warnaLatar,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(ikon, color: warna, size: 19),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '$jumlah',
-            style: TextStyle(
-              color: warna,
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            judul,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: teksSekunder,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),
@@ -713,47 +661,8 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
     );
   }
 
-  Widget _filterSiswa() {
-    const pilihan = ['Semua', 'Menunggu', 'Diterima', 'Ditolak'];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: pilihan.map((status) {
-          final aktif = _filterStatus == status;
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(status),
-              selected: aktif,
-              showCheckmark: false,
-              selectedColor: biru,
-              backgroundColor: Colors.white,
-              side: BorderSide(
-                color: aktif ? biru : garis,
-              ),
-              labelStyle: TextStyle(
-                color: aktif ? Colors.white : teks,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              onSelected: (_) {
-                setState(() => _filterStatus = status);
-              },
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _tampilanKosong() {
-    final adaPencarian = _kataKunci.trim().isNotEmpty ||
-        _filterStatus != 'Semua';
+    final adaPencarian = _kataKunci.trim().isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -792,7 +701,7 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
           const SizedBox(height: 8),
           Text(
             adaPencarian
-                ? 'Coba gunakan kata kunci atau filter status lain.'
+                ? 'Coba gunakan nama atau kelas yang lain.'
                 : 'Data siswa akan muncul setelah ada pengajuan '
                     'konseling.',
             textAlign: TextAlign.center,
@@ -802,27 +711,13 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
               height: 1.6,
             ),
           ),
-          if (adaPencarian) ...[
-            const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () {
-                _pencarianController.clear();
-                setState(() {
-                  _kataKunci = '';
-                  _filterStatus = 'Semua';
-                });
-              },
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Reset Filter'),
-            ),
-          ],
         ],
       ),
     );
   }
 
   Widget _kartuSiswa(Map<String, String> siswa) {
-    final status = siswa['status'] ?? 'Menunggu';
+    final semuaPengajuan = _pengajuanUntukSiswa(siswa);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -858,8 +753,6 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
                         biru.withOpacity(0.15),
                         biru.withOpacity(0.06),
                       ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -909,57 +802,11 @@ class _DataSiswaPageState extends State<DataSiswaPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        siswa['alasan'] ?? 'Belum ada keterangan',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        '${semuaPengajuan.length} pengajuan konseling',
                         style: const TextStyle(
-                          color: teks,
+                          color: teksSekunder,
                           fontSize: 12,
-                          height: 1.4,
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _latarStatus(status),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _ikonStatus(status),
-                                  color: _warnaStatus(status),
-                                  size: 12,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  status,
-                                  style: TextStyle(
-                                    color: _warnaStatus(status),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (siswa['jadwalTanggal'] != null)
-                            const Icon(
-                              Icons.event_available_rounded,
-                              color: Color(0xFF218653),
-                              size: 15,
-                            ),
-                        ],
                       ),
                     ],
                   ),

@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AjukanKonselingPage extends StatefulWidget {
   const AjukanKonselingPage({super.key});
@@ -9,8 +11,7 @@ class AjukanKonselingPage extends StatefulWidget {
       _AjukanKonselingPageState();
 }
 
-class _AjukanKonselingPageState
-    extends State<AjukanKonselingPage> {
+class _AjukanKonselingPageState extends State<AjukanKonselingPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _ceritaController =
       TextEditingController();
@@ -23,9 +24,12 @@ class _AjukanKonselingPageState
 
   String? _kategori;
   String? _guruBk;
+  String? _guruBkId;
   String? _jam;
   String _urgensi = 'Sedang';
+
   DateTime? _tanggalKonseling;
+  bool _isLoading = false;
 
   final List<String> _kategoriList = [
     'Akademik',
@@ -34,12 +38,6 @@ class _AjukanKonselingPageState
     'Pribadi',
     'Emosi',
     'Lainnya',
-  ];
-
-  final List<String> _guruBkList = [
-    'Ibu Siti Rahma, S.Pd.',
-    'Bapak Andi Wijaya, S.Pd.',
-    'Ibu Rina Maharani, S.Psi.',
   ];
 
   final List<String> _jamList = [
@@ -95,7 +93,7 @@ class _AjukanKonselingPageState
       },
     );
 
-    if (tanggal != null) {
+    if (tanggal != null && mounted) {
       setState(() {
         _tanggalKonseling = tanggal;
       });
@@ -122,7 +120,128 @@ class _AjukanKonselingPageState
         '${tanggal.year}';
   }
 
-  void _kirimPengajuan() {
+  // MENGAMBIL DAFTAR GURU BK DARI FIRESTORE
+  Stream<QuerySnapshot<Map<String, dynamic>>> _streamGuruBk() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'Guru BK')
+        .snapshots();
+  }
+
+  // DROPDOWN GURU BK
+  Widget _dropdownGuruBk() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _streamGuruBk(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Text(
+            'Gagal mengambil daftar Guru BK. Periksa koneksi atau aturan Firestore.',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 12,
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: LinearProgressIndicator(
+              color: _primary,
+            ),
+          );
+        }
+
+        final daftarGuru = snapshot.data?.docs ?? [];
+
+        if (daftarGuru.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFAFBFD),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: const Color(0xFFE5EAF0),
+              ),
+            ),
+            child: const Text(
+              'Belum ada akun Guru BK yang terdaftar.',
+              style: TextStyle(
+                color: _textGrey,
+                fontSize: 13,
+              ),
+            ),
+          );
+        }
+
+        // Pastikan pilihan lama masih tersedia.
+        final pilihanMasihAda = daftarGuru.any(
+          (guru) => guru.id == _guruBkId,
+        );
+
+        if (_guruBkId != null && !pilihanMasihAda) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _guruBkId = null;
+                _guruBk = null;
+              });
+            }
+          });
+        }
+
+        return DropdownButtonFormField<String>(
+          value: pilihanMasihAda ? _guruBkId : null,
+          isExpanded: true,
+          decoration: _inputDecoration(
+            icon: Icons.person_outline_rounded,
+            hint: 'Pilih Guru BK',
+          ),
+          items: daftarGuru.map((guru) {
+            final data = guru.data();
+            final nama = data['nama']?.toString().trim();
+
+            return DropdownMenuItem<String>(
+              value: guru.id,
+              child: Text(
+                nama == null || nama.isEmpty ? 'Guru BK' : nama,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: _isLoading
+              ? null
+              : (value) {
+                  if (value == null) return;
+
+                  final guruTerpilih = daftarGuru.firstWhere(
+                    (guru) => guru.id == value,
+                  );
+
+                  final dataGuru = guruTerpilih.data();
+
+                  setState(() {
+                    _guruBkId = guruTerpilih.id;
+                    _guruBk =
+                        dataGuru['nama']?.toString() ?? 'Guru BK';
+                  });
+                },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Guru BK wajib dipilih';
+            }
+            return null;
+          },
+        );
+      },
+    );
+  }
+
+  // SIMPAN PENGAJUAN KE FIRESTORE
+  Future<void> _kirimPengajuan() async {
+    if (_isLoading) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -134,6 +253,13 @@ class _AjukanKonselingPageState
       return;
     }
 
+    if (_guruBkId == null || _guruBk == null) {
+      _tampilkanPesan(
+        'Silakan pilih Guru BK terlebih dahulu.',
+      );
+      return;
+    }
+
     if (_jam == null) {
       _tampilkanPesan(
         'Silakan pilih jam konseling terlebih dahulu.',
@@ -141,29 +267,144 @@ class _AjukanKonselingPageState
       return;
     }
 
-    _tampilkanDialogBerhasil();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      _tampilkanPesan(
+        'Sesi login tidak ditemukan. Silakan login kembali.',
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Ambil profil siswa.
+      final profilSnapshot = await firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!profilSnapshot.exists) {
+        throw Exception(
+          'Profil siswa tidak ditemukan di Firestore.',
+        );
+      }
+
+      final profil = profilSnapshot.data()!;
+
+      if (profil['role'] != 'Siswa') {
+        throw Exception(
+          'Hanya akun Siswa yang dapat mengirim pengajuan.',
+        );
+      }
+
+      // Periksa kembali akun Guru BK yang dipilih.
+      final guruSnapshot = await firestore
+          .collection('users')
+          .doc(_guruBkId)
+          .get();
+
+      if (!guruSnapshot.exists) {
+        throw Exception(
+          'Akun Guru BK yang dipilih tidak ditemukan.',
+        );
+      }
+
+      final dataGuru = guruSnapshot.data()!;
+
+      if (dataGuru['role'] != 'Guru BK') {
+        throw Exception(
+          'Akun yang dipilih bukan akun Guru BK.',
+        );
+      }
+
+      final namaGuru =
+          dataGuru['nama']?.toString().trim() ?? '';
+
+      if (namaGuru.isEmpty) {
+        throw Exception(
+          'Nama Guru BK belum tersedia. Periksa profil Guru BK.',
+        );
+      }
+
+      // Simpan pengajuan beserta UID Guru BK.
+      await firestore.collection('pengajuan_konseling').add({
+        'siswaId': user.uid,
+        'namaSiswa': profil['nama'] ?? '',
+        'emailSiswa': profil['email'] ?? user.email ?? '',
+        'nis': profil['nis'] ?? '',
+        'kelas': profil['kelas'] ?? '',
+
+        'guruBkId': _guruBkId,
+        'guruBk': namaGuru,
+
+        'kategori': _kategori,
+        'cerita': _ceritaController.text.trim(),
+        'tanggalKonseling': Timestamp.fromDate(
+          _tanggalKonseling!,
+        ),
+        'jamKonseling': _jam,
+        'urgensi': _urgensi,
+        'status': 'Menunggu',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+
+      _tampilkanDialogBerhasil();
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+
+      _tampilkanPesan(
+        'Gagal menyimpan pengajuan: ${e.message ?? e.code}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      _tampilkanPesan(
+        'Pengajuan gagal dikirim: $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _tampilkanPesan(String pesan) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(pesan),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(pesan),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   void _tampilkanDialogBerhasil() {
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
           contentPadding: const EdgeInsets.fromLTRB(
-            24, 24, 24, 8,
+            24,
+            24,
+            24,
+            8,
           ),
           title: const Column(
             children: [
@@ -203,7 +444,7 @@ class _AjukanKonselingPageState
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
@@ -257,7 +498,10 @@ class _AjukanKonselingPageState
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
-              18, 16, 18, 32,
+              18,
+              16,
+              18,
+              32,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +509,6 @@ class _AjukanKonselingPageState
                 _header(),
                 const SizedBox(height: 22),
 
-                // FORM KONSELING
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -306,9 +549,13 @@ class _AjukanKonselingPageState
                             child: Text(kategori),
                           );
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() => _kategori = value);
-                        },
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _kategori = value;
+                                });
+                              },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Kategori masalah wajib dipilih';
@@ -321,32 +568,7 @@ class _AjukanKonselingPageState
 
                       _label('Guru BK'),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _guruBk,
-                        isExpanded: true,
-                        decoration: _inputDecoration(
-                          icon: Icons.person_outline_rounded,
-                          hint: 'Pilih Guru BK',
-                        ),
-                        items: _guruBkList.map((guru) {
-                          return DropdownMenuItem<String>(
-                            value: guru,
-                            child: Text(
-                              guru,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() => _guruBk = value);
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Guru BK wajib dipilih';
-                          }
-                          return null;
-                        },
-                      ),
+                      _dropdownGuruBk(),
 
                       const SizedBox(height: 20),
 
@@ -371,9 +593,13 @@ class _AjukanKonselingPageState
                             child: Text(jam),
                           );
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() => _jam = value);
-                        },
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _jam = value;
+                                });
+                              },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Jam konseling wajib dipilih';
@@ -409,12 +635,15 @@ class _AjukanKonselingPageState
                           contentPadding: const EdgeInsets.all(16),
                         ),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
+                          if (value == null ||
+                              value.trim().isEmpty) {
                             return 'Ceritakan masalah yang ingin dikonsultasikan';
                           }
+
                           if (value.trim().length < 10) {
                             return 'Ceritakan sedikit lebih lengkap';
                           }
+
                           return null;
                         },
                       ),
@@ -464,7 +693,9 @@ class _AjukanKonselingPageState
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: _kirimPengajuan,
+                          onPressed: _isLoading
+                              ? null
+                              : _kirimPengajuan,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primary,
                             foregroundColor: Colors.white,
@@ -473,20 +704,33 @@ class _AjukanKonselingPageState
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.send_rounded, size: 19),
-                              SizedBox(width: 10),
-                              Text(
-                                'Kirim Pengajuan',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.send_rounded,
+                                      size: 19,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'Kirim Pengajuan',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ],
@@ -513,7 +757,6 @@ class _AjukanKonselingPageState
     );
   }
 
-  // HEADER GRADIENT
   Widget _header() {
     return Container(
       width: double.infinity,
@@ -643,7 +886,7 @@ class _AjukanKonselingPageState
     final sudahPilih = _tanggalKonseling != null;
 
     return InkWell(
-      onTap: _pilihTanggal,
+      onTap: _isLoading ? null : _pilihTanggal,
       borderRadius: BorderRadius.circular(15),
       child: InputDecorator(
         decoration: _inputDecoration(
@@ -789,9 +1032,13 @@ class _AjukanKonselingPageState
     final selected = _urgensi == value;
 
     return InkWell(
-      onTap: () {
-        setState(() => _urgensi = value);
-      },
+      onTap: _isLoading
+          ? null
+          : () {
+              setState(() {
+                _urgensi = value;
+              });
+            },
       borderRadius: BorderRadius.circular(15),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),

@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StatusPengajuanPage extends StatelessWidget {
   const StatusPengajuanPage({super.key});
@@ -10,8 +12,37 @@ class StatusPengajuanPage extends StatelessWidget {
   static const Color _textDark = Color(0xFF202124);
   static const Color _textGrey = Color(0xFF6B7280);
 
+  String _formatTanggal(dynamic value) {
+    if (value == null) return '-';
+
+    DateTime date;
+    if (value is Timestamp) {
+      date = value.toDate();
+    } else if (value is DateTime) {
+      date = value;
+    } else {
+      return '-';
+    }
+
+    const bulan = [
+      'Januari', 'Februari', 'Maret', 'April',
+      'Mei', 'Juni', 'Juli', 'Agustus',
+      'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    return '${date.day} ${bulan[date.month - 1]} ${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: Text('Silakan login terlebih dahulu.')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _background,
       appBar: AppBar(
@@ -29,59 +60,142 @@ class StatusPengajuanPage extends StatelessWidget {
         iconTheme: const IconThemeData(color: _textDark),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _header(),
-              const SizedBox(height: 20),
-
-              _statusCard(),
-              const SizedBox(height: 24),
-
-              _sectionTitle(
-                'Proses Pengajuan',
-                'Pantau perkembangan pengajuan konselingmu',
-                Icons.timeline_rounded,
-              ),
-              const SizedBox(height: 14),
-              _timelineCard(),
-              const SizedBox(height: 24),
-
-              _sectionTitle(
-                'Detail Pengajuan',
-                'Informasi konseling yang kamu ajukan',
-                Icons.assignment_outlined,
-              ),
-              const SizedBox(height: 14),
-              _detailCard(),
-              const SizedBox(height: 24),
-
-              _sectionTitle(
-                'Cerita yang Disampaikan',
-                'Ringkasan masalah yang ingin dikonsultasikan',
-                Icons.chat_bubble_outline_rounded,
-              ),
-              const SizedBox(height: 14),
-              _storyCard(),
-              const SizedBox(height: 18),
-
-              _infoCard(),
-              const SizedBox(height: 18),
-
-              const Center(
-                child: Text(
-                  'BinaCare • Teman untuk tumbuh dan berkembang',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF9CA3AF),
+        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('pengajuan_konseling')
+              .where('siswaId', isEqualTo: user.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Gagal mengambil data pengajuan. '
+                    'Periksa koneksi dan aturan Firestore.',
+                    textAlign: TextAlign.center,
                   ),
                 ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: _primary),
+              );
+            }
+
+            final documents = snapshot.data?.docs ?? [];
+
+            if (documents.isEmpty) {
+              return _emptyState();
+            }
+
+            // Urutkan berdasarkan waktu pengajuan terbaru.
+            documents.sort((a, b) {
+              final aTime = a.data()['createdAt'];
+              final bTime = b.data()['createdAt'];
+
+              final aDate = aTime is Timestamp
+                  ? aTime.toDate()
+                  : DateTime(2000);
+
+              final bDate = bTime is Timestamp
+                  ? bTime.toDate()
+                  : DateTime(2000);
+
+              return bDate.compareTo(aDate);
+            });
+
+            final data = documents.first.data();
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _header(),
+                  const SizedBox(height: 20),
+                  _statusCard(data),
+                  const SizedBox(height: 24),
+                  _sectionTitle(
+                    'Proses Pengajuan',
+                    'Pantau perkembangan pengajuan konselingmu',
+                    Icons.timeline_rounded,
+                  ),
+                  const SizedBox(height: 14),
+                  _timelineCard(data),
+                  const SizedBox(height: 24),
+                  _sectionTitle(
+                    'Detail Pengajuan',
+                    'Informasi konseling yang kamu ajukan',
+                    Icons.assignment_outlined,
+                  ),
+                  const SizedBox(height: 14),
+                  _detailCard(data),
+                  const SizedBox(height: 24),
+                  _sectionTitle(
+                    'Cerita yang Disampaikan',
+                    'Ringkasan masalah yang ingin dikonsultasikan',
+                    Icons.chat_bubble_outline_rounded,
+                  ),
+                  const SizedBox(height: 14),
+                  _storyCard(data),
+                  const SizedBox(height: 18),
+                  _infoCard(),
+                  const SizedBox(height: 18),
+                  const Center(
+                    child: Text(
+                      'BinaCare • Teman untuk tumbuh dan berkembang',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(
+              Icons.assignment_outlined,
+              size: 65,
+              color: Color(0xFF9CA3AF),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Belum Ada Pengajuan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: _textDark,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Pengajuan konseling yang kamu kirim akan '
+              'ditampilkan di halaman ini.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: _textGrey,
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -152,14 +266,49 @@ class StatusPengajuanPage extends StatelessWidget {
     );
   }
 
-  Widget _statusCard() {
+  Widget _statusCard(Map<String, dynamic> data) {
+    final status = (data['status'] ?? 'Menunggu').toString();
+
+    final bool waiting = status.toLowerCase() == 'menunggu';
+    final bool rejected = status.toLowerCase() == 'ditolak';
+
+    final Color statusColor = waiting
+        ? const Color(0xFF9A6A00)
+        : rejected
+            ? Colors.red.shade700
+            : _primary;
+
+    final Color statusBackground = waiting
+        ? const Color(0xFFFFF4D6)
+        : rejected
+            ? const Color(0xFFFFEAEA)
+            : const Color(0xFFEAF3FA);
+
+    final IconData statusIcon = waiting
+        ? Icons.hourglass_top_rounded
+        : rejected
+            ? Icons.cancel_outlined
+            : Icons.check_circle_outline_rounded;
+
+    final String statusText = waiting
+        ? 'Menunggu Konfirmasi'
+        : status;
+
+    final String message = waiting
+        ? 'Pengajuanmu sedang menunggu pemeriksaan dari Guru BK.'
+        : rejected
+            ? 'Pengajuanmu belum disetujui oleh Guru BK.'
+            : status.toLowerCase() == 'diterima'
+                ? 'Pengajuanmu telah diterima oleh Guru BK.'
+                : 'Status pengajuanmu telah diperbarui.';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFFFE5A3)),
+        border: Border.all(color: statusBackground),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF193B60).withValues(alpha: 0.04),
@@ -177,21 +326,17 @@ class StatusPengajuanPage extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4D6),
+                  color: statusBackground,
                   borderRadius: BorderRadius.circular(17),
                 ),
-                child: const Icon(
-                  Icons.hourglass_top_rounded,
-                  color: Color(0xFF9A6A00),
-                  size: 29,
-                ),
+                child: Icon(statusIcon, color: statusColor, size: 29),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'STATUS SAAT INI',
                       style: TextStyle(
                         fontSize: 10,
@@ -200,13 +345,13 @@ class StatusPengajuanPage extends StatelessWidget {
                         color: _textGrey,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     Text(
-                      'Menunggu Konfirmasi',
+                      statusText,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF9A6A00),
+                        color: statusColor,
                       ),
                     ),
                   ],
@@ -219,26 +364,22 @@ class StatusPengajuanPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFAEB),
+              color: statusBackground.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Row(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF9A6A00),
-                  size: 20,
-                ),
-                SizedBox(width: 9),
+                Icon(Icons.info_outline_rounded,
+                    color: statusColor, size: 20),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Text(
-                    'Pengajuanmu sedang menunggu pemeriksaan '
-                    'dari Guru BK. Silakan menunggu konfirmasi.',
+                    message,
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.5,
-                      color: Color(0xFF856000),
+                      color: statusColor,
                     ),
                   ),
                 ),
@@ -250,11 +391,7 @@ class StatusPengajuanPage extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(
-    String title,
-    String subtitle,
-    IconData icon,
-  ) {
+  Widget _sectionTitle(String title, String subtitle, IconData icon) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -295,7 +432,16 @@ class StatusPengajuanPage extends StatelessWidget {
     );
   }
 
-  Widget _timelineCard() {
+  Widget _timelineCard(Map<String, dynamic> data) {
+    final status = (data['status'] ?? 'Menunggu')
+        .toString()
+        .toLowerCase();
+
+    final bool waiting = status == 'menunggu';
+    final bool rejected = status == 'ditolak';
+    final bool accepted = status == 'diterima' ||
+        status == 'selesai';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 22, 18, 8),
@@ -312,23 +458,30 @@ class StatusPengajuanPage extends StatelessWidget {
           _timelineItem(
             icon: Icons.hourglass_top_rounded,
             title: 'Menunggu konfirmasi',
-            description: 'Guru BK sedang memeriksa pengajuan.',
+            description: 'Pengajuan menunggu pemeriksaan Guru BK.',
             active: true,
             isLast: false,
           ),
           _timelineItem(
-            icon: Icons.check_circle_outline_rounded,
-            title: 'Disetujui',
-            description: 'Menunggu keputusan dari Guru BK.',
-            active: false,
+            icon: rejected
+                ? Icons.cancel_outlined
+                : Icons.check_circle_outline_rounded,
+            title: rejected ? 'Ditolak' : 'Keputusan Guru BK',
+            description: rejected
+                ? 'Pengajuan belum disetujui.'
+                : accepted
+                    ? 'Pengajuan telah diterima.'
+                    : 'Menunggu keputusan dari Guru BK.',
+            active: accepted || rejected,
             isLast: false,
           ),
           _timelineItem(
             icon: Icons.event_available_outlined,
             title: 'Jadwal konseling',
-            description:
-                'Informasi jadwal tersedia setelah pengajuan disetujui.',
-            active: false,
+            description: accepted
+                ? 'Tanggal: ${_formatTanggal(data['tanggalKonseling'])}, Jam: ${data['jamKonseling'] ?? '-'}'
+                : 'Informasi jadwal menunggu persetujuan Guru BK.',
+            active: accepted,
             isLast: true,
           ),
         ],
@@ -336,7 +489,7 @@ class StatusPengajuanPage extends StatelessWidget {
     );
   }
 
-  Widget _detailCard() {
+  Widget _detailCard(Map<String, dynamic> data) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(19),
@@ -346,31 +499,31 @@ class StatusPengajuanPage extends StatelessWidget {
           _detailItem(
             icon: Icons.category_outlined,
             title: 'Kategori',
-            value: 'Akademik',
+            value: data['kategori']?.toString() ?? '-',
           ),
           _detailDivider(),
           _detailItem(
             icon: Icons.person_outline_rounded,
             title: 'Guru BK',
-            value: 'Ibu Siti Rahma, S.Pd.',
+            value: data['guruBk']?.toString() ?? '-',
           ),
           _detailDivider(),
           _detailItem(
             icon: Icons.calendar_month_outlined,
             title: 'Tanggal',
-            value: '15 Oktober 2026',
+            value: _formatTanggal(data['tanggalKonseling']),
           ),
           _detailDivider(),
           _detailItem(
             icon: Icons.access_time_rounded,
             title: 'Jam',
-            value: '09:00 - 09:30',
+            value: data['jamKonseling']?.toString() ?? '-',
           ),
           _detailDivider(),
           _detailItem(
             icon: Icons.flag_outlined,
             title: 'Tingkat Urgensi',
-            value: 'Sedang',
+            value: data['urgensi']?.toString() ?? '-',
           ),
         ],
       ),
@@ -384,24 +537,24 @@ class StatusPengajuanPage extends StatelessWidget {
     );
   }
 
-  Widget _storyCard() {
+  Widget _storyCard(Map<String, dynamic> data) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: _cardDecoration(),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.format_quote_rounded,
             size: 27,
             color: _primary,
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Saya ingin berkonsultasi mengenai kesulitan belajar.',
-              style: TextStyle(
+              data['cerita']?.toString() ?? '-',
+              style: const TextStyle(
                 fontSize: 14,
                 height: 1.7,
                 color: Color(0xFF4B5563),
@@ -425,11 +578,7 @@ class StatusPengajuanPage extends StatelessWidget {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: _primary,
-            size: 22,
-          ),
+          Icon(Icons.info_outline_rounded, color: _primary, size: 22),
           SizedBox(width: 11),
           Expanded(
             child: Column(
@@ -445,9 +594,9 @@ class StatusPengajuanPage extends StatelessWidget {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'Status pada halaman ini masih berupa contoh. '
-                  'Pada tahap berikutnya, status dapat dihubungkan '
-                  'dengan data pengajuan dari aplikasi.',
+                  'Informasi pada halaman ini diperbarui secara '
+                  'otomatis mengikuti perubahan data pengajuan '
+                  'di Cloud Firestore.',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.6,
@@ -484,13 +633,8 @@ class StatusPengajuanPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: _textGrey,
-                ),
-              ),
+              Text(title,
+                  style: const TextStyle(fontSize: 12, color: _textGrey)),
               const SizedBox(height: 4),
               Text(
                 value,
@@ -538,11 +682,7 @@ class StatusPengajuanPage extends StatelessWidget {
                         : const Color(0xFFE5E7EB),
                   ),
                 ),
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: activeColor,
-                ),
+                child: Icon(icon, size: 18, color: activeColor),
               ),
               if (!isLast)
                 Container(

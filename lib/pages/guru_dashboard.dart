@@ -1,4 +1,8 @@
+
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'profil_guru_page.dart';
 import 'jadwal_guru_page.dart';
 import 'data_siswa_page.dart';
@@ -19,31 +23,137 @@ class _GuruDashboardState extends State<GuruDashboard> {
   static const Color teksSekunder = Color(0xFF778396);
   static const Color garis = Color(0xFFE7EDF4);
 
-  final String _namaGuru = 'Nama Guru BK';
+  String _namaGuru = 'Guru BK';
+  List<Map<String, String>> _daftarPengajuan = [];
 
-  final List<Map<String, String>> _daftarPengajuan = [
-    {
-      'nama': 'Andi Saputra',
-      'kelas': 'VIII A',
-      'alasan': 'Kesulitan belajar',
-      'tanggal': '09 Oktober 2026',
-      'status': 'Menunggu',
-    },
-    {
-      'nama': 'Siti Rahma',
-      'kelas': 'VII B',
-      'alasan': 'Masalah pertemanan',
-      'tanggal': '09 Oktober 2026',
-      'status': 'Menunggu',
-    },
-    {
-      'nama': 'Budi Pratama',
-      'kelas': 'IX A',
-      'alasan': 'Konsultasi akademik',
-      'tanggal': '08 Oktober 2026',
-      'status': 'Diterima',
-    },
-  ];
+  final User? _user = FirebaseAuth.instance.currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _ambilProfilGuru();
+  }
+
+  Future<void> _ambilProfilGuru() async {
+    if (_user == null) return;
+
+    try {
+      final dokumen = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_user!.uid)
+          .get();
+
+      if (!mounted) return;
+
+      if (dokumen.exists) {
+        setState(() {
+          _namaGuru = dokumen.data()?['nama']?.toString() ?? 'Guru BK';
+        });
+      }
+    } catch (e) {
+      debugPrint('Gagal mengambil profil Guru BK: $e');
+    }
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _streamPengajuan() {
+    if (_user == null) {
+      return const Stream.empty();
+    }
+
+    return FirebaseFirestore.instance
+        .collection('pengajuan_konseling')
+        .where('guruBkId', isEqualTo: _user!.uid)
+        .snapshots();
+  }
+
+  String _formatTanggal(DateTime value) {
+    const bulan = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${value.day} ${bulan[value.month - 1]} ${value.year}';
+  }
+
+  String _formatJam(TimeOfDay value) {
+    return '${value.hour.toString().padLeft(2, '0')}:'
+        '${value.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _tanggalDariData(dynamic value) {
+    if (value is Timestamp) {
+      return _formatTanggal(value.toDate());
+    }
+
+    if (value is DateTime) {
+      return _formatTanggal(value);
+    }
+
+    return '-';
+  }
+
+  List<Map<String, String>> _ubahDataFirestore(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> dokumen,
+  ) {
+    final hasil = dokumen.map((doc) {
+      final data = doc.data();
+
+      final tanggalPengajuan = data['createdAt'] is Timestamp
+          ? data['createdAt']
+          : data['tanggalKonseling'];
+
+      return <String, String>{
+        'id': doc.id,
+        'nama': data['namaSiswa']?.toString() ?? '-',
+        'kelas': data['kelas']?.toString() ?? '-',
+        'alasan': data['cerita']?.toString() ??
+            data['kategori']?.toString() ??
+            '-',
+        'kategori': data['kategori']?.toString() ?? '-',
+        'tanggal': _tanggalDariData(tanggalPengajuan),
+        'status': data['status']?.toString() ?? 'Menunggu',
+        'jadwalTanggal': _tanggalDariData(data['tanggalKonseling']),
+        'jadwalWaktu': data['jamKonseling']?.toString() ?? '-',
+        'jadwalTempat': data['tempat']?.toString() ?? '-',
+        'alasanPenolakan':
+            data['alasanPenolakan']?.toString() ?? '',
+        'urgensi': data['urgensi']?.toString() ?? '-',
+        'nis': data['nis']?.toString() ?? '-',
+        'email': data['emailSiswa']?.toString() ?? '-',
+      };
+    }).toList();
+
+    // Urutkan berdasarkan tanggal pengajuan terbaru.
+    hasil.sort((a, b) {
+      final docA = dokumen.firstWhere((doc) => doc.id == a['id']);
+      final docB = dokumen.firstWhere((doc) => doc.id == b['id']);
+
+      final waktuA = docA.data()['createdAt'];
+      final waktuB = docB.data()['createdAt'];
+
+      final dateA = waktuA is Timestamp
+          ? waktuA.toDate()
+          : DateTime(2000);
+
+      final dateB = waktuB is Timestamp
+          ? waktuB.toDate()
+          : DateTime(2000);
+
+      return dateB.compareTo(dateA);
+    });
+
+    return hasil;
+  }
 
   void _tampilkanPesan(String pesan) {
     if (!mounted) return;
@@ -71,32 +181,18 @@ class _GuruDashboardState extends State<GuruDashboard> {
     );
   }
 
-  String _formatTanggal(DateTime value) {
-    const bulan = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-
-    return '${value.day} ${bulan[value.month - 1]} ${value.year}';
-  }
-
-  String _formatJam(TimeOfDay value) {
-    return '${value.hour.toString().padLeft(2, '0')}:'
-        '${value.minute.toString().padLeft(2, '0')}';
-  }
-
   Future<void> _terimaPengajuan(int index) async {
-    if (_daftarPengajuan[index]['status'] != 'Menunggu') {
+    if (index >= _daftarPengajuan.length) return;
+
+    final pengajuan = _daftarPengajuan[index];
+    final id = pengajuan['id'];
+
+    if (id == null || id.isEmpty) {
+      _tampilkanPesan('ID pengajuan tidak ditemukan.');
+      return;
+    }
+
+    if (pengajuan['status'] != 'Menunggu') {
       _tampilkanPesan('Pengajuan ini sudah diproses.');
       return;
     }
@@ -104,6 +200,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
     DateTime? tanggal;
     TimeOfDay? jamMulai;
     TimeOfDay? jamSelesai;
+
     final tempatController = TextEditingController(text: 'Ruang BK');
 
     try {
@@ -150,13 +247,13 @@ class _GuruDashboardState extends State<GuruDashboard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _daftarPengajuan[index]['nama'] ?? '-',
+                                pengajuan['nama'] ?? '-',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               Text(
-                                'Kelas ${_daftarPengajuan[index]['kelas'] ?? '-'}',
+                                'Kelas ${pengajuan['kelas'] ?? '-'}',
                                 style: const TextStyle(
                                   color: teksSekunder,
                                   fontSize: 12,
@@ -264,12 +361,12 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     return;
                   }
 
-                  final start =
+                  final mulai =
                       jamMulai!.hour * 60 + jamMulai!.minute;
-                  final finish =
+                  final selesai =
                       jamSelesai!.hour * 60 + jamSelesai!.minute;
 
-                  if (finish <= start) {
+                  if (selesai <= mulai) {
                     _tampilkanPesan(
                       'Jam selesai harus setelah jam mulai.',
                     );
@@ -295,19 +392,33 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
       if (hasil != true || !mounted) return;
 
-      setState(() {
-        _daftarPengajuan[index]['status'] = 'Diterima';
-        _daftarPengajuan[index]['jadwalTanggal'] =
-            _formatTanggal(tanggal!);
-        _daftarPengajuan[index]['jadwalWaktu'] =
-            '${_formatJam(jamMulai!)} - ${_formatJam(jamSelesai!)}';
-        _daftarPengajuan[index]['jadwalTempat'] =
-            tempatController.text.trim();
+      final tanggalJadwal = DateTime(
+        tanggal!.year,
+        tanggal!.month,
+        tanggal!.day,
+      );
+
+      final waktuJadwal =
+          '${_formatJam(jamMulai!)} - ${_formatJam(jamSelesai!)}';
+
+      await FirebaseFirestore.instance
+          .collection('pengajuan_konseling')
+          .doc(id)
+          .update({
+        'status': 'Diterima',
+        'tanggalKonseling': Timestamp.fromDate(tanggalJadwal),
+        'jamKonseling': waktuJadwal,
+        'tempat': tempatController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       _tampilkanPesan(
-        'Pengajuan diterima dan jadwal berhasil dibuat.',
+        'Pengajuan diterima dan jadwal berhasil disimpan.',
       );
+    } on FirebaseException catch (e) {
+      _tampilkanPesan('Gagal menyimpan jadwal: ${e.message ?? e.code}');
+    } catch (e) {
+      _tampilkanPesan('Terjadi kesalahan: $e');
     } finally {
       tempatController.dispose();
     }
@@ -343,7 +454,17 @@ class _GuruDashboardState extends State<GuruDashboard> {
   }
 
   Future<void> _tolakPengajuan(int index) async {
-    if (_daftarPengajuan[index]['status'] != 'Menunggu') {
+    if (index >= _daftarPengajuan.length) return;
+
+    final pengajuan = _daftarPengajuan[index];
+    final id = pengajuan['id'];
+
+    if (id == null || id.isEmpty) {
+      _tampilkanPesan('ID pengajuan tidak ditemukan.');
+      return;
+    }
+
+    if (pengajuan['status'] != 'Menunggu') {
       _tampilkanPesan('Pengajuan ini sudah diproses.');
       return;
     }
@@ -375,7 +496,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
             children: [
               Text(
                 'Tuliskan alasan penolakan untuk '
-                '${_daftarPengajuan[index]['nama'] ?? 'siswa ini'}.',
+                '${pengajuan['nama'] ?? 'siswa ini'}.',
                 style: const TextStyle(
                   color: teksSekunder,
                   height: 1.5,
@@ -410,9 +531,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 final alasan = alasanController.text.trim();
 
                 if (alasan.isEmpty) {
-                  _tampilkanPesan(
-                    'Alasan penolakan wajib diisi.',
-                  );
+                  _tampilkanPesan('Alasan penolakan wajib diisi.');
                   return;
                 }
 
@@ -430,20 +549,33 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
       if (alasan == null || !mounted) return;
 
-      setState(() {
-        _daftarPengajuan[index]['status'] = 'Ditolak';
-        _daftarPengajuan[index]['alasanPenolakan'] = alasan;
+      await FirebaseFirestore.instance
+          .collection('pengajuan_konseling')
+          .doc(id)
+          .update({
+        'status': 'Ditolak',
+        'alasanPenolakan': alasan,
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       _tampilkanPesan(
         'Pengajuan ditolak. Alasan berhasil disimpan.',
       );
+    } on FirebaseException catch (e) {
+      _tampilkanPesan('Gagal menolak pengajuan: ${e.message ?? e.code}');
+    } catch (e) {
+      _tampilkanPesan('Terjadi kesalahan: $e');
     } finally {
       alasanController.dispose();
     }
   }
 
   void _lihatDetail(int index) {
+    if (index >= _daftarPengajuan.length) return;
+
+    final pengajuan = _daftarPengajuan[index];
+    final status = pengajuan['status'] ?? 'Menunggu';
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -464,7 +596,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
@@ -490,55 +621,65 @@ class _GuruDashboardState extends State<GuruDashboard> {
                   _detailItem(
                     Icons.person_outline_rounded,
                     'Nama Siswa',
-                    _daftarPengajuan[index]['nama'] ?? '-',
+                    pengajuan['nama'] ?? '-',
                   ),
                   _detailItem(
                     Icons.school_outlined,
                     'Kelas',
-                    _daftarPengajuan[index]['kelas'] ?? '-',
+                    pengajuan['kelas'] ?? '-',
+                  ),
+                  _detailItem(
+                    Icons.badge_outlined,
+                    'NIS',
+                    pengajuan['nis'] ?? '-',
+                  ),
+                  _detailItem(
+                    Icons.category_outlined,
+                    'Kategori Konseling',
+                    pengajuan['kategori'] ?? '-',
                   ),
                   _detailItem(
                     Icons.chat_bubble_outline_rounded,
-                    'Alasan Konseling',
-                    _daftarPengajuan[index]['alasan'] ?? '-',
+                    'Cerita atau Alasan Konseling',
+                    pengajuan['alasan'] ?? '-',
                   ),
                   _detailItem(
                     Icons.calendar_today_outlined,
                     'Tanggal Pengajuan',
-                    _daftarPengajuan[index]['tanggal'] ?? '-',
+                    pengajuan['tanggal'] ?? '-',
                   ),
                   _detailItem(
                     Icons.info_outline_rounded,
                     'Status',
-                    _daftarPengajuan[index]['status'] ?? '-',
+                    status,
                   ),
-                  if (_daftarPengajuan[index]['status'] == 'Ditolak' &&
-                      _daftarPengajuan[index]['alasanPenolakan'] != null)
+                  if (status == 'Ditolak')
                     _detailItem(
                       Icons.comment_outlined,
                       'Alasan Penolakan',
-                      _daftarPengajuan[index]['alasanPenolakan']!,
+                      pengajuan['alasanPenolakan']?.isNotEmpty == true
+                          ? pengajuan['alasanPenolakan']!
+                          : 'Tidak ada keterangan',
                     ),
-                  if (_daftarPengajuan[index]['status'] == 'Diterima' &&
-                      _daftarPengajuan[index]['jadwalTanggal'] != null) ...[
+                  if (status == 'Diterima') ...[
                     _detailItem(
                       Icons.event_rounded,
                       'Tanggal Konseling',
-                      _daftarPengajuan[index]['jadwalTanggal']!,
+                      pengajuan['jadwalTanggal'] ?? '-',
                     ),
                     _detailItem(
                       Icons.access_time_rounded,
                       'Waktu Konseling',
-                      _daftarPengajuan[index]['jadwalWaktu']!,
+                      pengajuan['jadwalWaktu'] ?? '-',
                     ),
                     _detailItem(
                       Icons.location_on_outlined,
                       'Tempat Konseling',
-                      _daftarPengajuan[index]['jadwalTempat']!,
+                      pengajuan['jadwalTempat'] ?? '-',
                     ),
                   ],
                   const SizedBox(height: 10),
-                  if (_daftarPengajuan[index]['status'] == 'Menunggu')
+                  if (status == 'Menunggu')
                     Row(
                       children: [
                         Expanded(
@@ -711,8 +852,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                           20,
                         ),
                         itemCount: _daftarPengajuan.length,
-                        itemBuilder: (_, index) =>
-                            _pengajuanCard(index),
+                        itemBuilder: (_, index) => _pengajuanCard(index),
                       ),
               ),
             ],
@@ -726,11 +866,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
-      ),
       builder: (sheetContext) => SafeArea(
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -753,19 +888,11 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 ),
               ),
               const SizedBox(height: 22),
-              Center(
-                child: Container(
-                  width: 76,
-                  height: 76,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEAF3FA),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 39,
-                    color: biru,
-                  ),
+              const Center(
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  size: 65,
+                  color: biru,
                 ),
               ),
               const SizedBox(height: 15),
@@ -799,9 +926,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     backgroundColor: biru,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
                   ),
                   child: const Text('Tutup'),
                 ),
@@ -856,318 +980,356 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final jumlahMenunggu = _daftarPengajuan
-        .where((item) => item['status'] == 'Menunggu')
-        .length;
+    if (_user == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('Silakan login kembali.'),
+        ),
+      );
+    }
 
-    final jumlahDiterima = _daftarPengajuan
-        .where((item) => item['status'] == 'Diterima')
-        .length;
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _streamPengajuan(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Scaffold(
+            backgroundColor: latar,
+            body: Center(
+              child: CircularProgressIndicator(color: biru),
+            ),
+          );
+        }
 
-    final jumlahDitolak = _daftarPengajuan
-        .where((item) => item['status'] == 'Ditolak')
-        .length;
-
-    return Scaffold(
-      backgroundColor: latar,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 20,
-        title: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4D91D0), biruGelap],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        if (snapshot.hasError) {
+          return Scaffold(
+            backgroundColor: latar,
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Gagal mengambil pengajuan konseling.\n${snapshot.error}',
+                  textAlign: TextAlign.center,
                 ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.favorite_rounded,
-                color: Colors.white,
-                size: 24,
               ),
             ),
-            const SizedBox(width: 11),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          );
+        }
+
+        final dokumen = snapshot.data?.docs ?? [];
+
+        _daftarPengajuan = _ubahDataFirestore(dokumen);
+
+        final jumlahMenunggu = _daftarPengajuan
+            .where((item) => item['status'] == 'Menunggu')
+            .length;
+
+        final jumlahDiterima = _daftarPengajuan
+            .where((item) => item['status'] == 'Diterima')
+            .length;
+
+        final jumlahDitolak = _daftarPengajuan
+            .where((item) => item['status'] == 'Ditolak')
+            .length;
+
+        return Scaffold(
+          backgroundColor: latar,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 20,
+            title: Row(
               children: [
-                Text(
-                  'BinaCare',
-                  style: TextStyle(
-                    color: teks,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4D91D0), biruGelap],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
-                Text(
-                  'LAYANAN KONSELING',
-                  style: TextStyle(
-                    color: teksSekunder,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.2,
-                  ),
+                const SizedBox(width: 11),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BinaCare',
+                      style: TextStyle(
+                        color: teks,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'LAYANAN KONSELING',
+                      style: TextStyle(
+                        color: teksSekunder,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Notifikasi',
-            onPressed: _bukaNotifikasi,
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: teks,
-              size: 26,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: InkWell(
-              onTap: _bukaProfil,
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: biru.withOpacity(0.25),
-                    width: 1.5,
-                  ),
-                ),
-                child: const CircleAvatar(
-                  radius: 17,
-                  backgroundColor: Color(0xFFEAF3FA),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: biru,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'DASHBOARD GURU BK',
-                style: TextStyle(
-                  color: teksSekunder,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 7),
-              Text(
-                'Halo, $_namaGuru 👋',
-                style: const TextStyle(
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
+            actions: [
+              IconButton(
+                tooltip: 'Notifikasi',
+                onPressed: _bukaNotifikasi,
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
                   color: teks,
-                  letterSpacing: -0.7,
+                  size: 26,
                 ),
               ),
-              const SizedBox(height: 7),
-              const Text(
-                'Mari bantu siswa tumbuh dan berkembang hari ini.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: teksSekunder,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _bannerPengajuan(jumlahMenunggu),
-              const SizedBox(height: 26),
-              const Text(
-                'Ringkasan Pengajuan',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: teks,
-                ),
-              ),
-              const SizedBox(height: 13),
-              Row(
-                children: [
-                  Expanded(
-                    child: _statCard(
-                      title: 'Menunggu',
-                      jumlah: jumlahMenunggu,
-                      icon: Icons.hourglass_top_rounded,
-                      warna: const Color(0xFFD99A23),
-                      warnaLatar: const Color(0xFFFFF5DF),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _statCard(
-                      title: 'Diterima',
-                      jumlah: jumlahDiterima,
-                      icon: Icons.check_circle_outline_rounded,
-                      warna: const Color(0xFF218653),
-                      warnaLatar: const Color(0xFFE5F6EC),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _statCard(
-                      title: 'Ditolak',
-                      jumlah: jumlahDitolak,
-                      icon: Icons.cancel_outlined,
-                      warna: const Color(0xFFD64545),
-                      warnaLatar: const Color(0xFFFDECEC),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 27),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Layanan Guru BK',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: teks,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: InkWell(
+                  onTap: _bukaProfil,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF3FA),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: biru.withOpacity(0.25),
+                        width: 1.5,
+                      ),
                     ),
-                    child: const Text(
-                      '4 Layanan',
-                      style: TextStyle(
+                    child: const CircleAvatar(
+                      radius: 17,
+                      backgroundColor: Color(0xFFEAF3FA),
+                      child: Icon(
+                        Icons.person_rounded,
                         color: biru,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                        size: 22,
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 13),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.28,
+            ],
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _menuCard(
-                    icon: Icons.assignment_outlined,
-                    title: 'Pengajuan Konseling',
-                    subtitle: 'Kelola permohonan siswa',
-                    onTap: () => _bukaMenu('Pengajuan Konseling'),
-                  ),
-                  _menuCard(
-                    icon: Icons.calendar_month_rounded,
-                    title: 'Jadwal Konseling',
-                    subtitle: 'Atur waktu konseling',
-                    onTap: () => _bukaMenu('Jadwal Konseling'),
-                  ),
-                  _menuCard(
-                    icon: Icons.groups_rounded,
-                    title: 'Data Siswa',
-                    subtitle: 'Informasi siswa',
-                    onTap: () => _bukaMenu('Data Siswa'),
-                  ),
-                  _menuCard(
-                    icon: Icons.history_rounded,
-                    title: 'Riwayat Konseling',
-                    subtitle: 'Lihat riwayat layanan',
-                    onTap: () => _bukaMenu('Riwayat Konseling'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 27),
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Pengajuan Terbaru',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: teks,
-                      ),
+                  const Text(
+                    'DASHBOARD GURU BK',
+                    style: TextStyle(
+                      color: teksSekunder,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
                     ),
                   ),
-                  TextButton(
-                    onPressed: _lihatSemuaPengajuan,
-                    child: const Text(
-                      'Lihat Semua',
-                      style: TextStyle(
-                        color: biru,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
+                  const SizedBox(height: 7),
+                  Text(
+                    'Halo, $_namaGuru 👋',
+                    style: const TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                      color: teks,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 5),
-              if (_daftarPengajuan.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: garis),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Mari bantu siswa tumbuh dan berkembang hari ini.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: teksSekunder,
+                      height: 1.5,
+                    ),
                   ),
-                  child: const Column(
+                  const SizedBox(height: 24),
+                  _bannerPengajuan(jumlahMenunggu),
+                  const SizedBox(height: 26),
+                  const Text(
+                    'Ringkasan Pengajuan',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: teks,
+                    ),
+                  ),
+                  const SizedBox(height: 13),
+                  Row(
                     children: [
-                      Icon(
-                        Icons.inbox_rounded,
-                        size: 42,
-                        color: Color(0xFF9AA7B5),
+                      Expanded(
+                        child: _statCard(
+                          title: 'Menunggu',
+                          jumlah: jumlahMenunggu,
+                          icon: Icons.hourglass_top_rounded,
+                          warna: const Color(0xFFD99A23),
+                          warnaLatar: const Color(0xFFFFF5DF),
+                        ),
                       ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Belum ada pengajuan konseling.',
-                        style: TextStyle(color: teksSekunder),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _statCard(
+                          title: 'Diterima',
+                          jumlah: jumlahDiterima,
+                          icon: Icons.check_circle_outline_rounded,
+                          warna: const Color(0xFF218653),
+                          warnaLatar: const Color(0xFFE5F6EC),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _statCard(
+                          title: 'Ditolak',
+                          jumlah: jumlahDitolak,
+                          icon: Icons.cancel_outlined,
+                          warna: const Color(0xFFD64545),
+                          warnaLatar: const Color(0xFFFDECEC),
+                        ),
                       ),
                     ],
                   ),
-                )
-              else
-                ...List.generate(
-                  _daftarPengajuan.length < 3
-                      ? _daftarPengajuan.length
-                      : 3,
-                  (index) => _pengajuanCard(index),
-                ),
-            ],
+                  const SizedBox(height: 27),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Layanan Guru BK',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: teks,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF3FA),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          '4 Layanan',
+                          style: TextStyle(
+                            color: biru,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 13),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.28,
+                    children: [
+                      _menuCard(
+                        icon: Icons.assignment_outlined,
+                        title: 'Pengajuan Konseling',
+                        subtitle: 'Kelola permohonan siswa',
+                        onTap: () => _bukaMenu('Pengajuan Konseling'),
+                      ),
+                      _menuCard(
+                        icon: Icons.calendar_month_rounded,
+                        title: 'Jadwal Konseling',
+                        subtitle: 'Atur waktu konseling',
+                        onTap: () => _bukaMenu('Jadwal Konseling'),
+                      ),
+                      _menuCard(
+                        icon: Icons.groups_rounded,
+                        title: 'Data Siswa',
+                        subtitle: 'Informasi siswa',
+                        onTap: () => _bukaMenu('Data Siswa'),
+                      ),
+                      _menuCard(
+                        icon: Icons.history_rounded,
+                        title: 'Riwayat Konseling',
+                        subtitle: 'Lihat riwayat layanan',
+                        onTap: () => _bukaMenu('Riwayat Konseling'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 27),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Pengajuan Terbaru',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: teks,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _lihatSemuaPengajuan,
+                        child: const Text(
+                          'Lihat Semua',
+                          style: TextStyle(
+                            color: biru,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  if (_daftarPengajuan.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: garis),
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 42,
+                            color: Color(0xFF9AA7B5),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Belum ada pengajuan konseling.',
+                            style: TextStyle(color: teksSekunder),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...List.generate(
+                      _daftarPengajuan.length < 3
+                          ? _daftarPengajuan.length
+                          : 3,
+                      (index) => _pengajuanCard(index),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1190,121 +1352,60 @@ class _GuruDashboardState extends State<GuruDashboard> {
           ),
         ],
       ),
-      child: Stack(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -15,
-            top: -25,
-            child: Container(
-              width: 115,
-              height: 115,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
-                shape: BoxShape.circle,
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '✦ Pusat Layanan BK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'Pengajuan Konseling',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  jumlahMenunggu == 0
+                      ? 'Semua pengajuan sudah diproses.'
+                      : 'Ada $jumlahMenunggu pengajuan yang menunggu tindakan Anda.',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton.icon(
+                  onPressed: _lihatSemuaPengajuan,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  label: const Text('Lihat Pengajuan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: biru,
+                    elevation: 0,
+                  ),
+                ),
+              ],
             ),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            color: Color(0xFFFFD88A),
-                            size: 14,
-                          ),
-                          SizedBox(width: 5),
-                          Text(
-                            'Pusat Layanan BK',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Pengajuan Konseling',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      jumlahMenunggu == 0
-                          ? 'Semua pengajuan sudah diproses.'
-                          : 'Ada $jumlahMenunggu pengajuan yang menunggu tindakan Anda.',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.88),
-                        fontSize: 12,
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    ElevatedButton.icon(
-                      onPressed: _lihatSemuaPengajuan,
-                      icon: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 16,
-                      ),
-                      label: const Text(
-                        'Lihat Pengajuan',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: biru,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(
-                  Icons.assignment_turned_in_rounded,
-                  color: Colors.white,
-                  size: 29,
-                ),
-              ),
-            ],
+          const SizedBox(width: 10),
+          const Icon(
+            Icons.assignment_turned_in_rounded,
+            color: Colors.white,
+            size: 45,
           ),
         ],
       ),
@@ -1327,13 +1428,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: garis),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF253858).withOpacity(0.035),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1389,43 +1483,19 @@ class _GuruDashboardState extends State<GuruDashboard> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(19),
             border: Border.all(color: garis),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF253858).withOpacity(0.025),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          biru.withOpacity(0.15),
-                          biru.withOpacity(0.06),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(icon, color: biru, size: 23),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 13,
-                    color: Colors.blueGrey.shade300,
-                  ),
-                ],
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF3FA),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: biru, size: 23),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1489,13 +1559,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: garis),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF253858).withOpacity(0.035),
-            blurRadius: 14,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -1539,6 +1602,8 @@ class _GuruDashboardState extends State<GuruDashboard> {
                     const SizedBox(height: 7),
                     Text(
                       pengajuan['alasan'] ?? '-',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
                         color: teks,
@@ -1561,11 +1626,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      ikonStatus,
-                      color: warnaStatus,
-                      size: 12,
-                    ),
+                    Icon(ikonStatus, color: warnaStatus, size: 12),
                     const SizedBox(width: 4),
                     Text(
                       status,
@@ -1629,9 +1690,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
                         color: Color(0xFFF1CACA),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                   ),
                 ),
@@ -1646,9 +1704,6 @@ class _GuruDashboardState extends State<GuruDashboard> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                   ),
                 ),
