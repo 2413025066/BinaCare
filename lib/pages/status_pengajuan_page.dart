@@ -437,7 +437,7 @@ class StatusPengajuanPage extends StatelessWidget {
         .toString()
         .toLowerCase();
 
-    final bool waiting = status == 'menunggu';
+    
     final bool rejected = status == 'ditolak';
     final bool accepted = status == 'diterima' ||
         status == 'selesai';

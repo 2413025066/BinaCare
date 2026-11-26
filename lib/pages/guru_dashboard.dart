@@ -40,7 +40,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
     try {
       final dokumen = await FirebaseFirestore.instance
           .collection('users')
-          .doc(_user!.uid)
+          .doc(_user.uid)
           .get();
 
       if (!mounted) return;
@@ -62,7 +62,7 @@ class _GuruDashboardState extends State<GuruDashboard> {
 
     return FirebaseFirestore.instance
         .collection('pengajuan_konseling')
-        .where('guruBkId', isEqualTo: _user!.uid)
+        .where('guruBkId', isEqualTo: _user.uid)
         .snapshots();
   }
 
