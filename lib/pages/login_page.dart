@@ -30,6 +30,9 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  static const Color primaryColor = Color(0xFF2F6FA3);
+  static const Color backgroundColor = Color(0xFFF6F8FA);
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -38,8 +41,6 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
-
-  // ================= PESAN =================
 
   void _showMessage(String message) {
     if (!mounted) return;
@@ -55,10 +56,7 @@ class _LoginPageState extends State<LoginPage> {
   // ================= LOGIN FIREBASE =================
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     if (_isLoading) return;
 
     setState(() {
@@ -68,11 +66,11 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
+
       final identifier = selectedRole == 'Siswa'
           ? _nisController.text.trim()
           : _nipController.text.trim();
 
-      // 1. Memeriksa email dan password ke Firebase Authentication.
       final credential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
         email: email,
@@ -85,7 +83,6 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Akun tidak ditemukan.');
       }
 
-      // 2. Mengambil data pengguna dari Firestore.
       final userDocument = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -102,11 +99,11 @@ class _LoginPageState extends State<LoginPage> {
       final userData = userDocument.data()!;
 
       final savedRole = userData['role']?.toString();
+
       final savedIdentifier = selectedRole == 'Siswa'
           ? userData['nis']?.toString()
           : userData['nip']?.toString();
 
-      // 3. Memeriksa kesesuaian role.
       if (savedRole != selectedRole) {
         await FirebaseAuth.instance.signOut();
         _showMessage(
@@ -115,10 +112,10 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // 4. Memeriksa kesesuaian NIS atau NIP.
       if (savedIdentifier == null ||
           savedIdentifier.trim() != identifier) {
         await FirebaseAuth.instance.signOut();
+
         _showMessage(
           selectedRole == 'Siswa'
               ? 'NIS tidak sesuai dengan akun.'
@@ -127,7 +124,6 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // 5. Masuk ke Dashboard sesuai role.
       if (!mounted) return;
 
       if (selectedRole == 'Siswa') {
@@ -202,353 +198,367 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FA),
+      backgroundColor: backgroundColor,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 300,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ================= LOGO =================
-
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAF3FA),
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                    child: const Icon(
-                      Icons.support_agent_rounded,
-                      color: Color(0xFF2F6FA3),
-                      size: 23,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 420,
                   ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // LOGO
 
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    'BinaCare',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2F6FA3),
-                    ),
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  const Text(
-                    'Layanan Konseling Siswa',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // ================= CARD LOGIN =================
-
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(11),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: const Color(0xFFE5E7EB),
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAF3FA),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.support_agent_rounded,
+                          color: primaryColor,
+                          size: 30,
+                        ),
                       ),
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Masuk',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF202124),
-                            ),
+
+                      const SizedBox(height: 10),
+
+                      const Text(
+                        'BinaCare',
+                        style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      const Text(
+                        'Layanan Konseling Siswa',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // CARD LOGIN
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(0xFFE5E7EB),
                           ),
-
-                          const SizedBox(height: 2),
-
-                          const Text(
-                            'Masuk untuk menggunakan BinaCare.',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFF6B7280),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: 0.03,
+                              ),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-
-                          const SizedBox(height: 9),
-
-                          // ================= ROLE =================
-
-                          _fieldLabel('Masuk sebagai'),
-
-                          const SizedBox(height: 4),
-
-                          Row(
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _roleButton(
-                                  title: 'Siswa',
-                                  icon: Icons.school_outlined,
-                                  selected: selectedRole == 'Siswa',
-                                  onTap: () {
-                                    setState(() {
-                                      selectedRole = 'Siswa';
-                                    });
-                                    _formKey.currentState?.reset();
-                                  },
+                              const Text(
+                                'Masuk',
+                                style: TextStyle(
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF202124),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _roleButton(
-                                  title: 'Guru BK',
-                                  icon: Icons.support_agent_outlined,
-                                  selected: selectedRole == 'Guru BK',
-                                  onTap: () {
-                                    setState(() {
-                                      selectedRole = 'Guru BK';
-                                    });
-                                    _formKey.currentState?.reset();
-                                  },
+
+                              const SizedBox(height: 5),
+
+                              const Text(
+                                'Masuk untuk menggunakan BinaCare.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF6B7280),
                                 ),
                               ),
-                            ],
-                          ),
 
-                          const SizedBox(height: 8),
+                              const SizedBox(height: 20),
 
-                          // ================= EMAIL =================
+                              _fieldLabel('Masuk sebagai'),
 
-                          _fieldLabel('Email'),
+                              const SizedBox(height: 8),
 
-                          const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _roleButton(
+                                      title: 'Siswa',
+                                      icon: Icons.school_outlined,
+                                      selected:
+                                          selectedRole == 'Siswa',
+                                      onTap: () {
+                                        setState(() {
+                                          selectedRole = 'Siswa';
+                                        });
+                                        _formKey.currentState?.reset();
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _roleButton(
+                                      title: 'Guru BK',
+                                      icon: Icons.support_agent_outlined,
+                                      selected:
+                                          selectedRole == 'Guru BK',
+                                      onTap: () {
+                                        setState(() {
+                                          selectedRole = 'Guru BK';
+                                        });
+                                        _formKey.currentState?.reset();
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
 
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            style: const TextStyle(fontSize: 12),
-                            decoration: _inputDecoration(
-                              hint: 'Masukkan email',
-                              icon: Icons.email_outlined,
-                            ),
-                            validator: (value) {
-                              final email = value?.trim() ?? '';
+                              const SizedBox(height: 18),
 
-                              if (email.isEmpty) {
-                                return 'Email harus diisi.';
-                              }
+                              // EMAIL
 
-                              if (!RegExp(
-                                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                              ).hasMatch(email)) {
-                                return 'Masukkan email yang valid.';
-                              }
+                              _fieldLabel('Email'),
 
-                              return null;
-                            },
-                          ),
+                              const SizedBox(height: 7),
 
-                          const SizedBox(height: 7),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType:
+                                    TextInputType.emailAddress,
+                                textInputAction:
+                                    TextInputAction.next,
+                                style: const TextStyle(fontSize: 14),
+                                decoration: _inputDecoration(
+                                  hint: 'Masukkan email',
+                                  icon: Icons.email_outlined,
+                                ),
+                                validator: (value) {
+                                  final email =
+                                      value?.trim() ?? '';
 
-                          // ================= NIS / NIP =================
+                                  if (email.isEmpty) {
+                                    return 'Email harus diisi.';
+                                  }
 
-                          _fieldLabel(
-                            selectedRole == 'Siswa' ? 'NIS' : 'NIP',
-                          ),
+                                  if (!RegExp(
+                                    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                  ).hasMatch(email)) {
+                                    return 'Masukkan email yang valid.';
+                                  }
 
-                          const SizedBox(height: 3),
-
-                          TextFormField(
-                            controller: selectedRole == 'Siswa'
-                                ? _nisController
-                                : _nipController,
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.next,
-                            style: const TextStyle(fontSize: 12),
-                            decoration: _inputDecoration(
-                              hint: selectedRole == 'Siswa'
-                                  ? 'Masukkan NIS'
-                                  : 'Masukkan NIP',
-                              icon: Icons.badge_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null ||
-                                  value.trim().isEmpty) {
-                                return selectedRole == 'Siswa'
-                                    ? 'NIS harus diisi.'
-                                    : 'NIP harus diisi.';
-                              }
-
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 7),
-
-                          // ================= PASSWORD =================
-
-                          _fieldLabel('Password'),
-
-                          const SizedBox(height: 3),
-
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _login(),
-                            style: const TextStyle(fontSize: 12),
-                            decoration: _inputDecoration(
-                              hint: 'Masukkan password',
-                              icon: Icons.lock_outline_rounded,
-                              suffixIcon: IconButton(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword =
-                                        !_obscurePassword;
-                                  });
+                                  return null;
                                 },
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  color: const Color(0xFF6B7280),
-                                  size: 17,
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              // NIS / NIP
+
+                              _fieldLabel(
+                                selectedRole == 'Siswa'
+                                    ? 'NIS'
+                                    : 'NIP',
+                              ),
+
+                              const SizedBox(height: 7),
+
+                              TextFormField(
+                                controller: selectedRole == 'Siswa'
+                                    ? _nisController
+                                    : _nipController,
+                                keyboardType: TextInputType.number,
+                                textInputAction:
+                                    TextInputAction.next,
+                                style: const TextStyle(fontSize: 14),
+                                decoration: _inputDecoration(
+                                  hint: selectedRole == 'Siswa'
+                                      ? 'Masukkan NIS'
+                                      : 'Masukkan NIP',
+                                  icon: Icons.badge_outlined,
+                                ),
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().isEmpty) {
+                                    return selectedRole == 'Siswa'
+                                        ? 'NIS harus diisi.'
+                                        : 'NIP harus diisi.';
+                                  }
+
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              // PASSWORD
+
+                              _fieldLabel('Password'),
+
+                              const SizedBox(height: 7),
+
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _login(),
+                                style: const TextStyle(fontSize: 14),
+                                decoration: _inputDecoration(
+                                  hint: 'Masukkan password',
+                                  icon: Icons.lock_outline_rounded,
+                                  suffixIcon: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword =
+                                            !_obscurePassword;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                      color: const Color(0xFF6B7280),
+                                      size: 21,
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.isEmpty) {
+                                    return 'Password harus diisi.';
+                                  }
+
+                                  if (value.length < 6) {
+                                    return 'Password minimal 6 karakter.';
+                                  }
+
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 22),
+
+                              // TOMBOL MASUK
+
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed:
+                                      _isLoading ? null : _login,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    disabledBackgroundColor:
+                                        const Color(0xFF8EABC2),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 21,
+                                          height: 21,
+                                          child:
+                                              CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Masuk',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                 ),
                               ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Password harus diisi.';
-                              }
 
-                              if (value.length < 6) {
-                                return 'Password minimal 6 karakter.';
-                              }
+                              const SizedBox(height: 12),
 
-                              return null;
-                            },
-                          ),
+                              // LINK REGISTER
 
-                          const SizedBox(height: 10),
-
-                          // ================= LOGIN BUTTON =================
-
-                          SizedBox(
-                            width: double.infinity,
-                            height: 34,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFF2F6FA3),
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor:
-                                    const Color(0xFF8EABC2),
-                                elevation: 0,
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 17,
-                                      height: 17,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text(
-                                      'Masuk',
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  const Flexible(
+                                    child: Text(
+                                      'Belum punya akun?',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 13,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : _openRegister,
+                                    child: const Text(
+                                      'Daftar',
+                                      style: TextStyle(
+                                        color: primaryColor,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 6),
-
-                          // ================= REGISTER =================
-
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Flexible(
-                                child: Text(
-                                  'Belum punya akun?',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Color(0xFF6B7280),
                                   ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _isLoading ? null : _openRegister,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 3,
-                                  ),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: const Text(
-                                  'Daftar',
-                                  style: TextStyle(
-                                    color: Color(0xFF2F6FA3),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 6),
+                      const SizedBox(height: 16),
 
-                  const Text(
-                    'BinaCare • Layanan Konseling Siswa',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Color(0xFF9CA3AF),
-                    ),
+                      const Text(
+                        'BinaCare • Layanan Konseling Siswa',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -560,7 +570,7 @@ class _LoginPageState extends State<LoginPage> {
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 11,
+        fontSize: 14,
         fontWeight: FontWeight.w600,
         color: Color(0xFF202124),
       ),
@@ -576,39 +586,42 @@ class _LoginPageState extends State<LoginPage> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 11),
+      hintStyle: const TextStyle(
+        fontSize: 14,
+        color: Color(0xFF9CA3AF),
+      ),
       prefixIcon: Icon(
         icon,
         color: const Color(0xFF4B5563),
-        size: 16,
+        size: 20,
       ),
       suffixIcon: suffixIcon,
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 7,
+        horizontal: 14,
+        vertical: 15,
       ),
       prefixIconConstraints: const BoxConstraints(
-        minWidth: 30,
-        minHeight: 30,
+        minWidth: 46,
+        minHeight: 48,
       ),
       filled: true,
       fillColor: const Color(0xFFF8FAFC),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
           color: Color(0xFFE5E7EB),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(
-          color: Color(0xFF2F6FA3),
-          width: 1.2,
+          color: primaryColor,
+          width: 1.4,
         ),
       ),
     );
@@ -626,19 +639,19 @@ class _LoginPageState extends State<LoginPage> {
       color: selected
           ? const Color(0xFFEAF3FA)
           : const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          height: 36,
+          height: 48,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF2F6FA3)
+                  ? primaryColor
                   : const Color(0xFFE5E7EB),
-              width: selected ? 1.2 : 1,
+              width: selected ? 1.4 : 1,
             ),
           ),
           child: Row(
@@ -646,23 +659,23 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               Icon(
                 icon,
-                size: 15,
+                size: 19,
                 color: selected
-                    ? const Color(0xFF2F6FA3)
+                    ? primaryColor
                     : const Color(0xFF6B7280),
               ),
-              const SizedBox(width: 3),
+              const SizedBox(width: 7),
               Flexible(
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 13,
                     fontWeight: selected
                         ? FontWeight.w700
                         : FontWeight.w500,
                     color: selected
-                        ? const Color(0xFF2F6FA3)
+                        ? primaryColor
                         : const Color(0xFF4B5563),
                   ),
                 ),
